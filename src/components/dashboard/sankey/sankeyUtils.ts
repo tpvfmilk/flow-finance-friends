@@ -1,4 +1,3 @@
-
 import { SankeyNode, SankeyLink } from "@/lib/types";
 import * as d3 from "d3";
 
@@ -124,7 +123,8 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
   const depositToJointLinks = depositNodes.map(node => ({
     source: nodeMap.get(node.id),
     target: depositNodes.length, // Joint account node index
-    value: node.value
+    value: node.value,
+    category: "deposit" // Add category for coloring
   }));
   
   // Create links from joint account to categories
@@ -134,6 +134,7 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     return sourceNode && sourceNode.type === 'deposit';
   }).map(link => {
     const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
+    const targetNode = data.nodes.find(n => n.id === targetId);
     const target = nodeMap.get(targetId);
     
     if (target === undefined) {
@@ -145,11 +146,11 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
       source: depositNodes.length, // Joint account node index
       target,
       value: link.value,
-      category: link.category || ''
+      category: targetNode?.category || link.category || ''
     };
   }).filter(Boolean); // Remove null links
   
-  // Keep category to expense links as they are
+  // Keep category to expense/goal links with proper categories
   const categoryToExpenseLinks = data.links.filter(link => {
     const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
     const sourceNode = data.nodes.find(n => n.id === sourceId);
@@ -163,6 +164,9 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
     const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
     
+    const sourceNode = data.nodes.find(n => n.id === sourceId);
+    const targetNode = data.nodes.find(n => n.id === targetId);
+    
     const source = nodeMap.get(sourceId);
     const target = nodeMap.get(targetId);
     
@@ -175,7 +179,7 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
       source,
       target,
       value: link.value,
-      category: link.category || ''
+      category: sourceNode?.category || targetNode?.category || link.category || ''
     };
   }).filter(Boolean); // Remove null links
   

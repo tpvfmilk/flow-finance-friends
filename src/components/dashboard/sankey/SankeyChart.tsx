@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import { sankey, sankeyLinkHorizontal } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
-import { processNodes, processLinks } from "./sankeyUtils";
+import { processNodes, processLinks, getNodeColor } from "./sankeyUtils";
 import { SankeyNodes } from "./SankeyNodes";
 import { SankeyLinks } from "./SankeyLinks";
 
@@ -29,7 +29,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       // Set dimensions
       const width = containerRef.current.clientWidth;
       const chartHeight = typeof height === "string" ? parseInt(height) : height;
-      const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+      const margin = { top: 5, right: 10, bottom: 5, left: 10 };
       const innerWidth = width - margin.left - margin.right;
       const innerHeight = chartHeight - margin.top - margin.bottom;
 
@@ -39,15 +39,11 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const { processedNodes, nodeMap, depositNodes } = processNodes(data);
       const validProcessedLinks = processLinks(data, nodeMap, depositNodes);
 
-      // Debug logging
-      console.log("Total nodes:", processedNodes.length);
-      console.log("Valid links:", validProcessedLinks.length);
-      console.log("Node Map Contents:", Array.from(nodeMap.entries()));
-      
-      // Create the sankey generator
+      // Create the sankey generator with top alignment
       const sankeyGenerator = sankey()
         .nodeWidth(15)
-        .nodePadding(50)
+        .nodePadding(10) // Reduced padding to align nodes closer
+        .nodeAlign(d3.sankeyLeft) // Align nodes to the left
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
       // Generate the sankey layout
@@ -73,7 +69,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
       
-      // Render links
+      // Render links with category-specific colors
       svg.append("g")
         .selectAll("path")
         .data(result.links)
@@ -81,6 +77,11 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("d", sankeyLinkHorizontal())
         .attr("stroke-width", (d: any) => Math.max(1, d.width))
         .attr("stroke", (d: any) => {
+          // Get the source category if available, otherwise use target
+          const category = d.source.category || d.target.category || '';
+          if (category) {
+            return getNodeColor({ type: 'category', category });
+          }
           return d3.interpolateRgb(
             d.source.color || "#a6cee3",
             d.target.color || "#b2df8a"
@@ -88,6 +89,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         })
         .attr("fill", "none")
         .attr("stroke-opacity", 0.5)
+        .attr("class", "sankey-link")
         .append("title")
         .text((d: any) => `${d.source.name} → ${d.target.name}: ${d.value}`);
       
@@ -128,7 +130,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         try {
           const width = containerRef.current.clientWidth;
           const chartHeight = typeof height === "string" ? parseInt(height) : height;
-          const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+          const margin = { top: 5, right: 10, bottom: 5, left: 10 };
           const innerWidth = width - margin.left - margin.right;
           const innerHeight = chartHeight - margin.top - margin.bottom;
           
@@ -143,10 +145,11 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
           
-          // Update sankey generator with new width
+          // Update sankey generator with new width and top alignment
           const sankeyGenerator = sankey()
             .nodeWidth(15)
-            .nodePadding(50)
+            .nodePadding(10)
+            .nodeAlign(d3.sankeyLeft)
             .extent([[0, 0], [innerWidth, innerHeight]]);
           
           // Get processed data from previous calculation
@@ -159,7 +162,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
             links: validProcessedLinks
           });
           
-          // Render links
+          // Render links with category colors
           svg.append("g")
             .selectAll("path")
             .data(result.links)
@@ -167,13 +170,19 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
             .attr("d", sankeyLinkHorizontal())
             .attr("stroke-width", (d: any) => Math.max(1, d.width))
             .attr("stroke", (d: any) => {
+              // Get the source category if available, otherwise use target
+              const category = d.source.category || d.target.category || '';
+              if (category) {
+                return getNodeColor({ type: 'category', category });
+              }
               return d3.interpolateRgb(
                 d.source.color || "#a6cee3",
                 d.target.color || "#b2df8a"
               )(0.5);
             })
             .attr("fill", "none")
-            .attr("stroke-opacity", 0.5);
+            .attr("stroke-opacity", 0.5)
+            .attr("class", "sankey-link");
           
           // Render nodes
           const nodeGroup = svg.append("g")
