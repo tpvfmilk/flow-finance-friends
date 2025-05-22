@@ -1,3 +1,4 @@
+
 import { SankeyNode, SankeyLink } from "@/lib/types";
 import * as d3 from "d3";
 
@@ -118,7 +119,7 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
 }
 
 // Process links for D3 Sankey layout
-export function processLinks(data: { links: SankeyLink[] }, nodeMap: Map<string, number>, depositNodes: SankeyNode[]) {
+export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] }, nodeMap: Map<string, number>, depositNodes: SankeyNode[]) {
   // Create links from deposits to joint account
   const depositToJointLinks = depositNodes.map(node => ({
     source: nodeMap.get(node.id),

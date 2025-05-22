@@ -1,7 +1,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
-import { sankey } from "d3-sankey";
+import { sankey, sankeyLinkHorizontal } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
 import { processNodes, processLinks } from "./sankeyUtils";
 import { SankeyNodes } from "./SankeyNodes";
