@@ -4,9 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
-// Import type definitions - this ensures TS knows about our google charts types
-import "../types/google-charts";
-
 interface SankeyChartProps {
   data: SankeyData;
   height?: number | string;
