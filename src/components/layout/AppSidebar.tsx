@@ -1,4 +1,3 @@
-
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -6,123 +5,112 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-
+import { cn } from "@/lib/utils";
+import { useMobile } from "@/hooks/use-mobile";
 import {
-  BarChart3,
-  PiggyBank,
-  FolderTree,
-  Receipt,
-  Target,
-  CalendarDays,
-  Settings,
+  LayoutDashboard,
+  Wallet,
+  Tags,
   CreditCard,
-  Upload,
+  PieChart,
+  Calendar,
+  Settings,
+  Map,
 } from "lucide-react";
 
 export function AppSidebar() {
-  const sidebar = useSidebar();
-  const location = useLocation();
-  const currentPath = location.pathname;
-  
-  // Helper functions
-  const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-muted font-medium text-primary" : "hover:bg-muted/50";
-  
-  const sidebarItems = [
-    { title: "Dashboard", path: "/", icon: BarChart3 },
-    { title: "Deposits", path: "/deposits", icon: PiggyBank },
-    { title: "Categories", path: "/categories", icon: FolderTree },
-    { title: "Expenses", path: "/expenses", icon: Receipt },
-    { title: "Goals", path: "/goals", icon: Target },
-    { title: "Calendar", path: "/calendar", icon: CalendarDays },
-    { title: "Settings", path: "/settings", icon: Settings },
-  ];
-  
-  const expensesGroup = [
-    { title: "Add Expense", path: "/expenses/add", icon: CreditCard },
-    { title: "Scan Receipt", path: "/expenses/scan", icon: Receipt },
-    { title: "Import CSV", path: "/expenses/import", icon: Upload },
-  ];
-  
-  // Check if any items in the groups are active
-  const isMainGroupActive = sidebarItems.some((item) => isActive(item.path));
-  const isExpensesGroupActive = expensesGroup.some((item) => isActive(item.path));
-  
-  // Get collapsed state
-  const state = sidebar.state;
-  const collapsed = state === "collapsed";
+  const isMobile = useMobile();
+  const { pathname } = useLocation();
   
   return (
-    <Sidebar
-      className={`border-r transition-all ${collapsed ? "w-14" : "w-60"}`}
-      collapsible="icon"
-    >
-      <SidebarTrigger className="m-2 self-end md:hidden" />
-      <SidebarContent>
-        {/* Main group */}
-        <div 
-          data-sidebar="group"
-          className="relative flex w-full min-w-0 flex-col p-2"
-        >
-          <div 
-            data-sidebar="group-label"
-            className="duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0"
-          >
-            Main
-          </div>
-          <div
-            data-sidebar="group-content"
-            className="w-full text-sm"
-          >
-            <SidebarMenu>
-              {sidebarItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.path} end className={getNavCls}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </div>
-        </div>
-        
-        {/* Expense Tools group */}
-        <div 
-          data-sidebar="group"
-          className="relative flex w-full min-w-0 flex-col p-2"
-        >
-          <div 
-            data-sidebar="group-label"
-            className="duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0"
-          >
-            Expense Tools
-          </div>
-          <div
-            data-sidebar="group-content"
-            className="w-full text-sm"
-          >
-            <SidebarMenu>
-              {expensesGroup.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.path} className={getNavCls}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </div>
-        </div>
+    <Sidebar isMobile={isMobile} defaultCollapsed={false} collapsible>
+      <SidebarContent className="flex flex-col flex-grow">
+        <SidebarMenu>
+          <SidebarMenuButton asChild>
+            <NavLink to="/" className={cn({
+              'text-blue-500': pathname === "/"
+            })}>
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Dashboard</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/map" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive || pathname === "/map" })
+            }>
+              <Map className="h-5 w-5" />
+              <span>Map View</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuItem>
+            Transactions
+          </SidebarMenuItem>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/deposits" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive || pathname === "/deposits" })
+            }>
+              <Wallet className="h-5 w-5" />
+              <span>Deposits</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/categories" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive })
+            }>
+              <Tags className="h-5 w-5" />
+              <span>Categories</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/expenses" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive || pathname.startsWith("/expenses") })
+            }>
+              <CreditCard className="h-5 w-5" />
+              <span>Expenses</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuItem>
+            Planning
+          </SidebarMenuItem>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/goals" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive })
+            }>
+              <PieChart className="h-5 w-5" />
+              <span>Goals</span>
+            </NavLink>
+          </SidebarMenuButton>
+          
+          <SidebarMenuButton asChild>
+            <NavLink to="/calendar" className={({ isActive }) => 
+              cn({ 'text-blue-500': isActive })
+            }>
+              <Calendar className="h-5 w-5" />
+              <span>Calendar</span>
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenu>
       </SidebarContent>
+      
+      <SidebarFooter>
+        <SidebarMenuButton asChild>
+          <NavLink to="/settings" className={({ isActive }) => 
+            cn({ 'text-blue-500': isActive })
+          }>
+            <Settings className="h-5 w-5" />
+            <span>Settings</span>
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarFooter>
     </Sidebar>
   );
 }
