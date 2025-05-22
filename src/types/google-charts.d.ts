@@ -9,16 +9,16 @@ declare global {
         Bar: any;
         Histogram: any;
         Scatter: any;
-        visualization: {
-          DataTable: any;
-          Sankey: any;
-          LineChart: any;
-          BarChart: any;
-          ComboChart: any;
-          PieChart: any;
-          ScatterChart: any;
-          ColumnChart: any;
-        };
+      };
+      visualization: {
+        DataTable: new () => any;
+        Sankey: new (element: Element) => any;
+        LineChart: any;
+        BarChart: any;
+        ComboChart: any;
+        PieChart: any;
+        ScatterChart: any;
+        ColumnChart: any;
       };
       maps?: any;
     };

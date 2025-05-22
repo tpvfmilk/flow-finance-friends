@@ -3,55 +3,74 @@ import { useRef, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SankeyData, SankeyNode, SankeyLink } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { useGoogleMaps } from "@/hooks/use-google-maps";
 
 interface SankeyChartProps {
   data: SankeyData;
   height?: number | string;
 }
 
+// Ensure we have the correct type for Google Charts
+declare global {
+  interface Window {
+    google: {
+      charts: {
+        load: (version: string, options: { packages: string[] }) => void;
+        setOnLoadCallback: (callback: () => void) => void;
+      };
+      visualization: {
+        DataTable: new () => any;
+        Sankey: new (element: Element) => any;
+      };
+    };
+  }
+}
+
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartInitialized, setChartInitialized] = useState(false);
-  const { isLoaded, loadError } = useGoogleMaps({
-    autoLoad: true
-  });
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load Google Charts API
   useEffect(() => {
-    const loadGoogleVisualizationApi = async () => {
-      if (!window.google || !window.google.charts) {
-        // Load Google Visualization API
-        return new Promise<void>((resolve, reject) => {
+    const loadGoogleChartsApi = async () => {
+      try {
+        if (!window.google || !window.google.charts) {
+          // Load Google Visualization API
           const script = document.createElement('script');
           script.src = 'https://www.gstatic.com/charts/loader.js';
           script.async = true;
-          script.onload = () => {
-            if (window.google && window.google.charts) {
-              window.google.charts.load('current', { 'packages': ['sankey'] });
-              window.google.charts.setOnLoadCallback(() => {
-                setChartInitialized(true);
-                resolve();
-              });
-            } else {
-              reject(new Error('Failed to load Google Charts API'));
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Google Charts API'));
-          document.head.appendChild(script);
-        });
-      } else if (!chartInitialized) {
-        window.google.charts.load('current', { 'packages': ['sankey'] });
-        window.google.charts.setOnLoadCallback(() => {
-          setChartInitialized(true);
-        });
+          
+          // Create a promise to handle script loading
+          await new Promise<void>((resolve, reject) => {
+            script.onload = () => {
+              resolve();
+            };
+            script.onerror = () => reject(new Error('Failed to load Google Charts API'));
+            document.head.appendChild(script);
+          });
+        }
+        
+        // Now that script is loaded, load the packages
+        if (window.google && window.google.charts) {
+          window.google.charts.load('current', { 'packages': ['sankey'] });
+          window.google.charts.setOnLoadCallback(() => {
+            setChartInitialized(true);
+            setIsLoaded(true);
+          });
+        } else {
+          throw new Error('Google Charts API not available');
+        }
+      } catch (error) {
+        console.error('Error loading Google Charts API:', error);
+        setLoadError(error instanceof Error ? error : new Error(String(error)));
       }
     };
 
-    if (isLoaded) {
-      loadGoogleVisualizationApi();
-    }
-  }, [isLoaded, chartInitialized]);
+    loadGoogleChartsApi();
+  }, []);
 
+  // Draw the chart when data and API are ready
   useEffect(() => {
     if (!chartInitialized || !containerRef.current || !data.nodes.length || !data.links.length) {
       return;
@@ -141,6 +160,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       };
     } catch (error) {
       console.error('Error rendering Google Sankey chart:', error);
+      setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [data, chartInitialized, height]);
 
