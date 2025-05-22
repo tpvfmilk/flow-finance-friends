@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -15,7 +14,7 @@ interface SankeyNodeExtended extends SankeyNode<any, any> {
   index: number;
   name: string;
   category?: string;
-  type: "deposit" | "category" | "expense";
+  type: "deposit" | "joint" | "category" | "expense";
   color: string;
   value: number;
   x0: number;
@@ -36,7 +35,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
 
-  // Draw the chart when data is ready and component mounts
+  // Transform data to include joint account node
   useEffect(() => {
     if (!containerRef.current || !data.nodes.length || !data.links.length) {
       return;
@@ -61,23 +60,101 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-      // Process data for D3 Sankey layout
-      // D3 Sankey expects nodes with numeric indices
+      // Transform the data to add a joint account node
+      const depositNodes = data.nodes.filter(node => node.type === "deposit");
+      const categoryNodes = data.nodes.filter(node => node.type === "category");
+      const expenseNodes = data.nodes.filter(node => node.type === "expense");
+      
+      // Calculate total deposit amount
+      const totalDepositAmount = depositNodes.reduce((total, node) => total + node.value, 0);
+      
+      // Create joint account node
+      const jointAccountNode = {
+        name: "Joint Account",
+        id: "joint",
+        type: "joint" as const,
+        value: totalDepositAmount,
+      };
+      
+      // Process nodes for D3 Sankey layout with joint account included
       const nodeMap = new Map();
-      const processedNodes = data.nodes.map((node, index) => {
-        nodeMap.set(node.id || index.toString(), index);
+      
+      // Add all nodes including the joint account node
+      const processedNodes = [
+        ...depositNodes.map((node, index) => {
+          nodeMap.set(node.id || index.toString(), index);
+          return {
+            ...node,
+            index,
+            name: node.name,
+            type: node.type,
+            color: getNodeColor(node)
+          };
+        }),
+        {
+          name: jointAccountNode.name,
+          id: jointAccountNode.id,
+          type: jointAccountNode.type,
+          value: jointAccountNode.value,
+          index: depositNodes.length,
+          color: "#6366F1", // indigo for joint account
+        },
+        ...categoryNodes.map((node, index) => {
+          const nodeIndex = index + depositNodes.length + 1;
+          nodeMap.set(node.id || node.name, nodeIndex);
+          return {
+            ...node,
+            index: nodeIndex,
+            name: node.name,
+            category: node.category || '',
+            type: node.type,
+            color: getNodeColor(node)
+          };
+        }),
+        ...expenseNodes.map((node, index) => {
+          const nodeIndex = index + depositNodes.length + categoryNodes.length + 1;
+          nodeMap.set(node.id || node.name, nodeIndex);
+          return {
+            ...node,
+            index: nodeIndex,
+            name: node.name,
+            type: node.type,
+            color: getNodeColor(node)
+          };
+        })
+      ];
+      
+      // Create links from deposits to joint account
+      const depositToJointLinks = depositNodes.map(node => ({
+        source: nodeMap.get(node.id || node.name),
+        target: depositNodes.length, // Joint account node index
+        value: node.value
+      }));
+      
+      // Create links from joint account to categories
+      const jointToCategoryLinks = data.links.filter(link => {
+        const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
+        const sourceNode = data.nodes.find(n => n.id === sourceId);
+        return sourceNode && sourceNode.type === 'deposit';
+      }).map(link => {
+        const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
         return {
-          ...node,
-          index,
-          name: node.name,
-          category: node.category || '',
-          type: node.type,
-          color: getNodeColor(node)
+          source: depositNodes.length, // Joint account node index
+          target: nodeMap.get(targetId),
+          value: link.value,
+          category: link.category || ''
         };
       });
-
-      // Process links for D3 Sankey
-      const processedLinks = data.links.map(link => {
+      
+      // Keep category to expense links as they are
+      const categoryToExpenseLinks = data.links.filter(link => {
+        const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
+        const sourceNode = data.nodes.find(n => n.id === sourceId);
+        const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
+        const targetNode = data.nodes.find(n => n.id === targetId);
+        
+        return sourceNode && targetNode && sourceNode.type === 'category' && targetNode.type === 'expense';
+      }).map(link => {
         const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
         const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
         
@@ -88,6 +165,13 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           category: link.category || ''
         };
       });
+      
+      // Combine all links
+      const processedLinks = [
+        ...depositToJointLinks,
+        ...jointToCategoryLinks,
+        ...categoryToExpenseLinks
+      ];
 
       // Create the sankey generator
       const sankeyGenerator = sankey()
@@ -235,6 +319,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   function getNodeColor(node: any) {
     if (node.type === 'deposit') {
       return "#3B82F6"; // blue for deposits
+    } else if (node.type === 'joint') {
+      return "#6366F1"; // indigo for joint account
     } else if (node.type === 'category') {
       // Try to get color from category name
       const categoryName = node.category?.toLowerCase().replace(/\s+/g, '-');
