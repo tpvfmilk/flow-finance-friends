@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -60,11 +61,20 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-      // Transform the data to add a joint account node
-      const depositNodes = data.nodes.filter(node => node.type === "deposit");
-      const categoryNodes = data.nodes.filter(node => node.type === "category");
-      const expenseNodes = data.nodes.filter(node => node.type === "expense");
-      const goalNodes = data.nodes.filter(node => node.type === "goal");
+      // Ensure all nodes have IDs
+      const nodesWithIds = data.nodes.map((node, index) => {
+        if (!node.id) {
+          console.warn(`Node missing ID, assigning one based on index and type: ${index}-${node.type}`);
+          return { ...node, id: `${node.type}-${index}` };
+        }
+        return node;
+      });
+
+      // Classify nodes by type
+      const depositNodes = nodesWithIds.filter(node => node.type === "deposit");
+      const categoryNodes = nodesWithIds.filter(node => node.type === "category");
+      const expenseNodes = nodesWithIds.filter(node => node.type === "expense");
+      const goalNodes = nodesWithIds.filter(node => node.type === "goal");
       
       // Calculate total deposit amount
       const totalDepositAmount = depositNodes.reduce((total, node) => total + node.value, 0);
@@ -77,10 +87,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         value: totalDepositAmount,
       };
       
-      // Process nodes for D3 Sankey layout with joint account included
+      // Create a node map for ID lookups
       const nodeMap = new Map();
       
-      // Add all nodes including the joint account node
+      // Add all nodes to the processed array with correct indices
       const processedNodes = [
         ...depositNodes.map((node, index) => {
           const nodeId = node.id || `deposit-${index}`;
@@ -144,9 +154,12 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         })
       ];
       
+      // Debug output to verify all node IDs are correctly mapped
+      console.log("Node Map Contents:", Array.from(nodeMap.entries()));
+      
       // Create links from deposits to joint account
       const depositToJointLinks = depositNodes.map(node => ({
-        source: nodeMap.get(node.id || `deposit-${nodeMap.get(node.id)}`),
+        source: nodeMap.get(node.id),
         target: depositNodes.length, // Joint account node index
         value: node.value
       }));
@@ -210,16 +223,18 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         ...categoryToExpenseLinks
       ];
 
-      console.log("Processed Nodes:", processedNodes);
-      console.log("Processed Links:", processedLinks);
-      console.log("Node Map:", Array.from(nodeMap.entries()));
-
-      // Check for potential issues with the links
-      processedLinks.forEach(link => {
+      // Deep verification of links before rendering
+      const validProcessedLinks = processedLinks.filter(link => {
         if (link.source === undefined || link.target === undefined) {
-          console.error("Invalid link:", link);
+          console.error("Invalid link detected:", link);
+          return false;
         }
+        return true;
       });
+
+      console.log("Total nodes:", processedNodes.length);
+      console.log("Valid links:", validProcessedLinks.length);
+      console.log("Invalid links filtered out:", processedLinks.length - validProcessedLinks.length);
 
       // Create the sankey generator
       const sankeyGenerator = sankey()
@@ -228,10 +243,20 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
       // Generate the sankey layout
-      const { nodes, links } = sankeyGenerator({
+      const sankeyData = {
         nodes: processedNodes,
-        links: processedLinks
-      }) as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] };
+        links: validProcessedLinks
+      };
+      
+      // Check for data validity before rendering
+      if (sankeyData.nodes.length === 0 || sankeyData.links.length === 0) {
+        throw new Error("Invalid Sankey data: No nodes or links to display");
+      }
+      
+      const { nodes, links } = sankeyGenerator(sankeyData) as { 
+        nodes: SankeyNodeExtended[], 
+        links: SankeyLinkExtended[] 
+      };
 
       // Add links
       svg.append("g")
@@ -305,7 +330,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           // Regenerate layout with new dimensions
           const { nodes: newNodes, links: newLinks } = sankeyGenerator({
             nodes: processedNodes,
-            links: processedLinks
+            links: validProcessedLinks
           }) as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] };
           
           // Redraw links
