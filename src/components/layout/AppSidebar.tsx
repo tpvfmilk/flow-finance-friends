@@ -57,7 +57,8 @@ export function AppSidebar() {
   const isExpensesGroupActive = expensesGroup.some((item) => isActive(item.path));
   
   // Get collapsed state
-  const collapsed = sidebar.state === "collapsed";
+  const state = sidebar.state;
+  const collapsed = state === "collapsed";
   
   return (
     <Sidebar
@@ -66,9 +67,21 @@ export function AppSidebar() {
     >
       <SidebarTrigger className="m-2 self-end md:hidden" />
       <SidebarContent>
-        <SidebarGroup defaultOpen={isMainGroupActive}>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
-          <SidebarGroupContent>
+        {/* Main group */}
+        <div 
+          data-sidebar="group"
+          className="relative flex w-full min-w-0 flex-col p-2"
+        >
+          <div 
+            data-sidebar="group-label"
+            className="duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0"
+          >
+            Main
+          </div>
+          <div
+            data-sidebar="group-content"
+            className="w-full text-sm"
+          >
             <SidebarMenu>
               {sidebarItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -81,12 +94,24 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          </div>
+        </div>
         
-        <SidebarGroup defaultOpen={isExpensesGroupActive}>
-          <SidebarGroupLabel>Expense Tools</SidebarGroupLabel>
-          <SidebarGroupContent>
+        {/* Expense Tools group */}
+        <div 
+          data-sidebar="group"
+          className="relative flex w-full min-w-0 flex-col p-2"
+        >
+          <div 
+            data-sidebar="group-label"
+            className="duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0"
+          >
+            Expense Tools
+          </div>
+          <div
+            data-sidebar="group-content"
+            className="w-full text-sm"
+          >
             <SidebarMenu>
               {expensesGroup.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -99,8 +124,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          </div>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
