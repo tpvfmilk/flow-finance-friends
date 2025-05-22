@@ -1,3 +1,4 @@
+
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -8,7 +9,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard,
   Wallet,
@@ -21,11 +22,11 @@ import {
 } from "lucide-react";
 
 export function AppSidebar() {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { pathname } = useLocation();
   
   return (
-    <Sidebar isMobile={isMobile} defaultCollapsed={false} collapsible>
+    <Sidebar isMobile={isMobile} defaultCollapsed={false} collapsible="offcanvas">
       <SidebarContent className="flex flex-col flex-grow">
         <SidebarMenu>
           <SidebarMenuButton asChild>

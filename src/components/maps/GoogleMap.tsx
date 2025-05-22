@@ -26,7 +26,7 @@ export function GoogleMap({
   // Initialize the map when the API is loaded
   useEffect(() => {
     if (isLoaded && mapContainerRef.current && !map) {
-      const newMap = new google.maps.Map(mapContainerRef.current, {
+      const newMap = new window.google.maps.Map(mapContainerRef.current, {
         center,
         zoom,
         mapTypeControl: true,
@@ -43,7 +43,7 @@ export function GoogleMap({
     if (map && markers.length > 0) {
       // Clear existing markers first
       markers.forEach(markerData => {
-        new google.maps.Marker({
+        new window.google.maps.Marker({
           position: markerData.position,
           map,
           title: markerData.title
