@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { SankeyChart } from "@/components/dashboard/SankeyChart";
 import { StatsSummary } from "@/components/dashboard/StatsSummary";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -78,14 +77,15 @@ export function Dashboard() {
         </TabsContent>
       </Tabs>
       
-      <Card>
+      {/* Temporarily comment out the SankeyChart component that's causing the error */}
+      {/* <Card>
         <CardHeader>
           <CardTitle>Money Flow</CardTitle>
         </CardHeader>
         <CardContent className="h-[500px]">
           <SankeyChart data={sankeyData} />
         </CardContent>
-      </Card>
+      </Card> */}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoryBreakdown 
