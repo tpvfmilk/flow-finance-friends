@@ -10,43 +10,45 @@ export function getMockSankeyData(): SankeyData {
       { name: "Person 1", id: "person1", type: "deposit", value: 25848 },
       { name: "Person 2", id: "person2", type: "deposit", value: 7508.97 },
       
+      // Joint account node
+      { name: "Joint Account", id: "joint", type: "joint", value: 33356.97 },
+      
       // Categories
       { name: "Groceries", id: "cat1", type: "category", value: 5895.47, category: "groceries" },
-      { name: "Dining", id: "cat2", type: "category", value: 504185.42, category: "dining" },
-      { name: "Transport", id: "cat3", type: "category", value: 260235.27, category: "transportation" },
-      { name: "Shopping", id: "cat4", type: "category", value: 343937.26, category: "shopping" },
-      { name: "Bills", id: "cat5", type: "category", value: 535263.63, category: "bills" },
-      { name: "Coffee", id: "cat6", type: "category", value: 25182.74, category: "entertainment" },
+      { name: "Dining", id: "cat2", type: "category", value: 10508.97, category: "dining" },
+      { name: "Transport", id: "cat3", type: "category", value: 5000, category: "transportation" },
+      { name: "Shopping", id: "cat4", type: "category", value: 6000, category: "shopping" },
+      { name: "Bills", id: "cat5", type: "category", value: 5848, category: "bills" },
+      { name: "Entertainment", id: "cat6", type: "category", value: 105, category: "entertainment" },
       
-      // Expense destinations
-      { name: "Groceries", id: "exp1", type: "expense", value: 5895.47 },
-      { name: "Restaurants & Bars", id: "exp2", type: "expense", value: 504185.42 },
-      { name: "Clothing", id: "exp3", type: "expense", value: 83701.99 },
-      { name: "Shopping", id: "exp4", type: "expense", value: 260235.27 },
-      { name: "Food & Dining", id: "exp5", type: "expense", value: 535263.63 },
-      { name: "Coffee Shops", id: "exp6", type: "expense", value: 25182.74 },
-      { name: "Travel", id: "exp7", type: "expense", value: 133489.64 },
-      { name: "Miscellaneous", id: "exp8", type: "expense", value: 165227.11 },
+      // Goals (financial targets associated with categories)
+      { name: "Weekly Shop", id: "goal1", type: "goal", value: 3500, category: "groceries" },
+      { name: "Special Dinners", id: "goal2", type: "goal", value: 6000, category: "dining" },
+      { name: "Car Repair", id: "goal3", type: "goal", value: 2000, category: "transportation" },
+      { name: "New Laptop", id: "goal4", type: "goal", value: 4000, category: "shopping" },
+      { name: "Utility Bills", id: "goal5", type: "goal", value: 3800, category: "bills" },
+      { name: "Movie Night", id: "goal6", type: "goal", value: 105, category: "entertainment" },
     ],
     links: [
-      // Person to category
-      { source: "person1", target: "cat1", value: 3000 },
-      { source: "person1", target: "cat2", value: 8000 },
-      { source: "person1", target: "cat3", value: 5000 },
-      { source: "person1", target: "cat4", value: 6000 },
-      { source: "person1", target: "cat5", value: 3848 },
-      { source: "person2", target: "cat1", value: 2895.47 },
-      { source: "person2", target: "cat2", value: 2508.97 },
-      { source: "person2", target: "cat5", value: 2000 },
-      { source: "person2", target: "cat6", value: 105 },
+      // Person to joint account
+      { source: "person1", target: "joint", value: 25848 },
+      { source: "person2", target: "joint", value: 7508.97 },
       
-      // Category to expense
-      { source: "cat1", target: "exp1", value: 5895.47, category: "groceries" },
-      { source: "cat2", target: "exp2", value: 10508.97, category: "dining" },
-      { source: "cat3", target: "exp4", value: 5000, category: "transportation" },
-      { source: "cat4", target: "exp3", value: 6000, category: "shopping" },
-      { source: "cat5", target: "exp5", value: 5848, category: "bills" },
-      { source: "cat6", target: "exp6", value: 105, category: "entertainment" },
+      // Joint account to categories
+      { source: "joint", target: "cat1", value: 5895.47 },
+      { source: "joint", target: "cat2", value: 10508.97 },
+      { source: "joint", target: "cat3", value: 5000 },
+      { source: "joint", target: "cat4", value: 6000 },
+      { source: "joint", target: "cat5", value: 5848 },
+      { source: "joint", target: "cat6", value: 105 },
+      
+      // Categories to goals
+      { source: "cat1", target: "goal1", value: 3500, category: "groceries" },
+      { source: "cat2", target: "goal2", value: 6000, category: "dining" },
+      { source: "cat3", target: "goal3", value: 2000, category: "transportation" },
+      { source: "cat4", target: "goal4", value: 4000, category: "shopping" },
+      { source: "cat5", target: "goal5", value: 3800, category: "bills" },
+      { source: "cat6", target: "goal6", value: 105, category: "entertainment" },
     ]
   };
 }

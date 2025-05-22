@@ -5,7 +5,7 @@ import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimePeriod } from "@/lib/types";
+import { TimePeriod, SortConfig, Category } from "@/lib/types";
 import { filterExpensesByDate } from "@/lib/utils";
 import { SankeyChart } from "@/components/dashboard/SankeyChart";
 
@@ -19,6 +19,8 @@ export function Dashboard() {
   const [categories, setCategories] = useState(getMockCategories());
   const [expenses, setExpenses] = useState(getMockExpenses());
   const [deposits, setDeposits] = useState(getMockDeposits());
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [pinnedCategoryIds, setPinnedCategoryIds] = useState<string[]>([]);
   
   // Create a map of category IDs to names for display purposes
   const categoryMap = categories.reduce((acc, category) => {
@@ -42,6 +44,113 @@ export function Dashboard() {
     });
     
   }, [timePeriod]);
+  
+  // Handle sorting functionality
+  const handleSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    
+    setSortConfig({ key, direction });
+  };
+  
+  // Handle category pinning
+  const handleTogglePin = (categoryId: string) => {
+    setPinnedCategoryIds(prevPinned => {
+      if (prevPinned.includes(categoryId)) {
+        return prevPinned.filter(id => id !== categoryId);
+      } else {
+        return [...prevPinned, categoryId];
+      }
+    });
+  };
+  
+  // Sort and organize categories (pinned categories first, then sorted)
+  const getSortedCategories = () => {
+    // Create a copy with isPinned flag
+    const categoriesWithPinFlag = categories.map(category => ({
+      ...category,
+      isPinned: pinnedCategoryIds.includes(category.id)
+    }));
+    
+    // Split into pinned and unpinned
+    const pinnedCategories = categoriesWithPinFlag.filter(cat => cat.isPinned);
+    const unpinnedCategories = categoriesWithPinFlag.filter(cat => !cat.isPinned);
+    
+    // Sort unpinned categories if sort config exists
+    if (sortConfig !== null) {
+      const { key, direction } = sortConfig;
+      unpinnedCategories.sort((a, b) => {
+        // Special handling for calculated values
+        if (key === 'spent' || key === 'remaining' || key === 'allocated') {
+          const allocatedA = deposits.allocations[a.id] || 0;
+          const allocatedB = deposits.allocations[b.id] || 0;
+          
+          // Calculate expenses for each category
+          const expensesA = expenses
+            .filter(exp => exp.categoryId === a.id)
+            .reduce((sum, exp) => sum + exp.amount, 0);
+          
+          const expensesB = expenses
+            .filter(exp => exp.categoryId === b.id)
+            .reduce((sum, exp) => sum + exp.amount, 0);
+          
+          const remainingA = allocatedA - expensesA;
+          const remainingB = allocatedB - expensesB;
+          
+          if (key === 'allocated') {
+            return direction === 'ascending' ? allocatedA - allocatedB : allocatedB - allocatedA;
+          } else if (key === 'spent') {
+            return direction === 'ascending' ? expensesA - expensesB : expensesB - expensesA;
+          } else { // remaining
+            return direction === 'ascending' ? remainingA - remainingB : remainingB - remainingA;
+          }
+        }
+        
+        // For direct properties like name, percentage
+        if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
+          return direction === 'ascending' ? -1 : 1;
+        }
+        if (a[key as keyof typeof a] > b[key as keyof typeof b]) {
+          return direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
+    // Combine pinned and unpinned categories
+    return [...pinnedCategories, ...unpinnedCategories];
+  };
+  
+  // Get sorted categories for display
+  const sortedCategories = getSortedCategories();
+  
+  // Update Sankey data when sorting or pinning changes
+  useEffect(() => {
+    // Get the sorted category IDs to maintain the same order in Sankey
+    const categoryOrder = sortedCategories.map(cat => cat.id);
+    
+    // Update the Sankey data to reflect the new order
+    const updatedSankeyData = getMockSankeyData();
+    
+    // Sort category nodes based on our sorted categories
+    updatedSankeyData.nodes = updatedSankeyData.nodes.sort((a, b) => {
+      // Only sort category nodes
+      if (a.type === 'category' && b.type === 'category') {
+        const indexA = categoryOrder.indexOf(a.id || '');
+        const indexB = categoryOrder.indexOf(b.id || '');
+        
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+      }
+      return 0;
+    });
+    
+    setSankeyData(updatedSankeyData);
+  }, [sortConfig, pinnedCategoryIds]);
   
   return (
     <div className="flex flex-col gap-6">
@@ -89,9 +198,13 @@ export function Dashboard() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoryBreakdown 
-          categories={categories} 
+          categories={sortedCategories} 
           expenses={expenses}
           deposits={{ totalAllocated: deposits.allocations }}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          pinnedCategoryIds={pinnedCategoryIds}
+          onTogglePin={handleTogglePin}
         />
         <RecentActivity 
           expenses={expenses} 

@@ -14,6 +14,7 @@ export interface Category {
   percentage: number;
   color: string;
   currentBalance: number;
+  isPinned?: boolean; // Added for pinning categories
 }
 
 // Expenses
@@ -60,7 +61,7 @@ export interface SankeyNode {
   value: number;
   // Using numerical index for compatibility with recharts
   index?: number; 
-  type: "deposit" | "category" | "expense";
+  type: "deposit" | "joint" | "category" | "expense" | "goal";
   category?: string;
   // We'll keep the id for our own reference
   id?: string; 
@@ -81,6 +82,12 @@ export interface SankeyData {
 
 // Time Period Filter
 export type TimePeriod = "3m" | "6m" | "1y" | "ytd" | "all";
+
+// Sort Configuration
+export interface SortConfig {
+  key: string;
+  direction: 'ascending' | 'descending';
+}
 
 // Settings
 export interface Settings {
