@@ -8,7 +8,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 
 export const AppLayout = () => {
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full">
         <AppHeader />
         <div className="flex flex-1 w-full">

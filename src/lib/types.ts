@@ -1,4 +1,3 @@
-
 // Types for the Joint Bank Account Tracker
 
 // People
@@ -55,18 +54,22 @@ export interface Deposit {
   allocations: Record<string, number>;
 }
 
-// Sankey Data
+// Sankey Data - Updated to work with recharts
 export interface SankeyNode {
   name: string;
-  id: string;
-  type: "deposit" | "category" | "expense";
   value: number;
+  // Using numerical index for compatibility with recharts
+  index?: number; 
+  type: "deposit" | "category" | "expense";
   category?: string;
+  // We'll keep the id for our own reference
+  id?: string; 
 }
 
 export interface SankeyLink {
-  source: string;
-  target: string;
+  // These will be converted to numeric indices before rendering
+  source: number | string; 
+  target: number | string;
   value: number;
   category?: string;
 }

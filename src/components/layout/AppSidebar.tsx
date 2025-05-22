@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const sidebar = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   
@@ -56,14 +56,17 @@ export function AppSidebar() {
   const isMainGroupActive = sidebarItems.some((item) => isActive(item.path));
   const isExpensesGroupActive = expensesGroup.some((item) => isActive(item.path));
   
+  // Get collapsed state
+  const collapsed = sidebar.state === "collapsed";
+  
   return (
     <Sidebar
       className={`border-r transition-all ${collapsed ? "w-14" : "w-60"}`}
-      collapsible
+      collapsible="icon"
     >
       <SidebarTrigger className="m-2 self-end md:hidden" />
       <SidebarContent>
-        <SidebarGroup open={isMainGroupActive} defaultOpen>
+        <SidebarGroup defaultOpen={isMainGroupActive}>
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -81,7 +84,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        <SidebarGroup open={isExpensesGroupActive}>
+        <SidebarGroup defaultOpen={isExpensesGroupActive}>
           <SidebarGroupLabel>Expense Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
