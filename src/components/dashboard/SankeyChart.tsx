@@ -1,28 +1,12 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SankeyData, SankeyNode, SankeyLink } from "@/lib/types";
+import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 interface SankeyChartProps {
   data: SankeyData;
   height?: number | string;
-}
-
-// Ensure we have the correct type for Google Charts
-declare global {
-  interface Window {
-    google: {
-      charts: {
-        load: (version: string, options: { packages: string[] }) => void;
-        setOnLoadCallback: (callback: () => void) => void;
-      };
-      visualization: {
-        DataTable: new () => any;
-        Sankey: new (element: Element) => any;
-      };
-    };
-  }
 }
 
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
