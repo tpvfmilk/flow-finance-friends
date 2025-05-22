@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Category, Expense, SortConfig } from "@/lib/types";
 import { formatCurrency, calculateRemainingBalance } from "@/lib/utils";
-import { Pin, PinOff, ArrowUp, ArrowDown, SortAscending, SortDescending } from "lucide-react";
+import { Pin, PinOff, ArrowUp, ArrowDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CategoryBreakdownProps {
@@ -43,7 +43,7 @@ export function CategoryBreakdown({
   // Helper to render sort indicator
   const getSortDirectionIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
-      return <SortAscending size={16} className="ml-1 opacity-50" />;
+      return <ArrowDown size={16} className="ml-1 opacity-50" />;
     }
     return sortConfig.direction === 'ascending' 
       ? <ArrowUp size={16} className="ml-1" />
