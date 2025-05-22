@@ -1,6 +1,5 @@
 
 import { useRef, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import * as d3 from "d3";
@@ -248,27 +247,22 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
 
   if (loadError) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Money Flow</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center p-10">
+      <div className="w-full">
+        <div className="text-center p-10">
           <div className="text-red-500">
             Error rendering D3 Sankey chart: {loadError.message}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
     <div ref={containerRef} className="w-full" style={{ height }}>
       {!data.nodes.length && (
-        <Card className="w-full h-full flex items-center justify-center">
-          <CardContent>
-            <p className="text-muted-foreground">No data available for Sankey chart</p>
-          </CardContent>
-        </Card>
+        <div className="w-full h-full flex items-center justify-center">
+          <p className="text-muted-foreground">No data available for Sankey chart</p>
+        </div>
       )}
     </div>
   );
