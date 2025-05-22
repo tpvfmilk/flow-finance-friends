@@ -25,7 +25,7 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   
   return (
-    <Sidebar defaultCollapsed={false} collapsible="offcanvas">
+    <Sidebar collapsible="offcanvas">
       <SidebarContent className="flex flex-col flex-grow">
         <SidebarMenu>
           <SidebarMenuButton asChild>
