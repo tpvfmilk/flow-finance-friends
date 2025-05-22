@@ -1,4 +1,3 @@
-
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -26,7 +25,7 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   
   return (
-    <Sidebar isMobile={isMobile} defaultCollapsed={false} collapsible="offcanvas">
+    <Sidebar defaultCollapsed={false} collapsible="offcanvas">
       <SidebarContent className="flex flex-col flex-grow">
         <SidebarMenu>
           <SidebarMenuButton asChild>
