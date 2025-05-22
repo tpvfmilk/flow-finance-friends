@@ -1,229 +1,181 @@
 
 import { useRef, useEffect, useState } from "react";
-import { 
-  ResponsiveContainer, 
-  Sankey, 
-  Tooltip,
-  Rectangle,
-  Layer,
-  Text,
-  XAxis
-} from "recharts";
-import { Card, CardContent } from "@/components/ui/card";
-import { SankeyData as AppSankeyData, SankeyNode as AppSankeyNodeType, SankeyLink as AppSankeyLink } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SankeyData, SankeyNode, SankeyLink } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-
-interface CustomNodeProps {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  index: number;
-  payload: any;
-  containerWidth: number;
-}
+import { useGoogleMaps } from "@/hooks/use-google-maps";
 
 interface SankeyChartProps {
-  data: AppSankeyData;
+  data: SankeyData;
   height?: number | string;
 }
 
-const CustomNode = ({ x, y, width, height, index, payload, containerWidth }: CustomNodeProps) => {
-  // Get appropriate text color based on background darkness
-  const getTextColor = () => {
-    if (payload.type === 'category') {
-      const category = payload.category?.toLowerCase();
-      // Special case for light colors
-      if (category === 'savings') {
-        return "#000000";
-      }
-      return "#FFFFFF";
-    }
-    return "#000000";
-  };
-
-  // Get node background color
-  const getNodeColor = () => {
-    if (payload.type === 'deposit') {
-      return "#3B82F6"; // blue for deposits
-    } else if (payload.type === 'category') {
-      return payload.category ? `hsl(var(--${payload.category.toLowerCase().replace(/\s+/g, '-')}))` : "#9CA3AF";
-    } else {
-      return "#EF4444"; // red for expenses
-    }
-  };
-
-  const textX = x + width / 2;
-  const textY = y + height / 2;
-  const maxTextWidth = Math.min(width * 0.9, 120); // Limit text width
-  const fontSize = containerWidth > 640 ? 12 : 10;
-
-  return (
-    <Layer key={`CustomNode-${index}`}>
-      <Rectangle
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={getNodeColor()}
-        fillOpacity={0.9}
-        className="sankey-node"
-        rx={4}
-        ry={4}
-      />
-      <Text
-        x={textX}
-        y={textY - 8}
-        textAnchor="middle"
-        verticalAnchor="middle"
-        fill={getTextColor()}
-        fontSize={fontSize}
-        fontWeight="bold"
-        width={maxTextWidth}
-      >
-        {payload.name}
-      </Text>
-      <Text
-        x={textX}
-        y={textY + 10}
-        textAnchor="middle"
-        verticalAnchor="middle"
-        fill={getTextColor()}
-        fontSize={fontSize - 2}
-        width={maxTextWidth}
-      >
-        {formatCurrency(payload.value)}
-      </Text>
-    </Layer>
-  );
-};
-
-const CustomLink = (props: any) => {
-  return <Layer>
-    <path
-      d={props.path}
-      fill="none"
-      stroke={props.source.payload.type === 'category' ? `hsl(var(--${props.source.payload.category?.toLowerCase().replace(/\s+/g, '-')}))` : '#9CA3AF'}
-      strokeWidth={props.sourceX < props.targetX ? Math.max(1, props.linkWidth) : 0}
-      strokeOpacity={0.3}
-      className="sankey-link"
-    />
-  </Layer>
-};
-
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    
-    if (data.source && data.target) {
-      // This is a link tooltip
-      return (
-        <Card className="p-2 shadow-lg border border-gray-200 bg-white">
-          <CardContent className="p-2 text-sm">
-            <p className="font-bold">{`${data.source.name} → ${data.target.name}`}</p>
-            <p>{formatCurrency(data.value)}</p>
-          </CardContent>
-        </Card>
-      );
-    } else {
-      // This is a node tooltip
-      return (
-        <Card className="p-2 shadow-lg border border-gray-200 bg-white">
-          <CardContent className="p-2 text-sm">
-            <p className="font-bold">{data.name}</p>
-            <p>{formatCurrency(data.value)}</p>
-            {data.type === 'category' && (
-              <p className="text-xs mt-1">(Click for details)</p>
-            )}
-          </CardContent>
-        </Card>
-      );
-    }
-  }
-  
-  return null;
-};
-
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  
-  // Process data to ensure compatibility with recharts
-  // Convert string IDs to numeric indices for recharts
-  const [processedData, setProcessedData] = useState<any>({ nodes: [], links: [] });
-  
+  const [chartInitialized, setChartInitialized] = useState(false);
+  const { isLoaded, loadError } = useGoogleMaps({
+    autoLoad: true
+  });
+
   useEffect(() => {
-    // Create a mapping of node IDs to indices
-    const nodeMap = new Map();
-    
-    // Process nodes first to create id-to-index mapping
-    const processedNodes = data.nodes.map((node, index) => {
-      if (typeof node.id === 'string') {
-        nodeMap.set(node.id, index);
-      }
-      return { ...node, index };
-    });
-    
-    // Then process links using the mapping
-    const processedLinks = data.links.map(link => {
-      // Convert source/target from string IDs to numeric indices if needed
-      const sourceIndex = typeof link.source === 'string' && nodeMap.has(link.source) 
-        ? nodeMap.get(link.source) 
-        : link.source;
-        
-      const targetIndex = typeof link.target === 'string' && nodeMap.has(link.target)
-        ? nodeMap.get(link.target)
-        : link.target;
-        
-      return { 
-        ...link, 
-        source: sourceIndex, 
-        target: targetIndex 
-      };
-    });
-    
-    setProcessedData({ nodes: processedNodes, links: processedLinks });
-  }, [data]);
-  
-  useEffect(() => {
-    if (containerRef.current) {
-      setContainerWidth(containerRef.current.clientWidth);
-    }
-    
-    const handleResize = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth);
+    const loadGoogleVisualizationApi = async () => {
+      if (!window.google || !window.google.charts) {
+        // Load Google Visualization API
+        return new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://www.gstatic.com/charts/loader.js';
+          script.async = true;
+          script.onload = () => {
+            if (window.google && window.google.charts) {
+              window.google.charts.load('current', { 'packages': ['sankey'] });
+              window.google.charts.setOnLoadCallback(() => {
+                setChartInitialized(true);
+                resolve();
+              });
+            } else {
+              reject(new Error('Failed to load Google Charts API'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Google Charts API'));
+          document.head.appendChild(script);
+        });
+      } else if (!chartInitialized) {
+        window.google.charts.load('current', { 'packages': ['sankey'] });
+        window.google.charts.setOnLoadCallback(() => {
+          setChartInitialized(true);
+        });
       }
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  // Handle node click
-  const handleNodeClick = (nodeData: AppSankeyNodeType) => {
-    console.log("Node clicked:", nodeData);
-    // TODO: Implement node click handler
-    // If category node, show detailed breakdown
-  };
-  
+
+    if (isLoaded) {
+      loadGoogleVisualizationApi();
+    }
+  }, [isLoaded, chartInitialized]);
+
+  useEffect(() => {
+    if (!chartInitialized || !containerRef.current || !data.nodes.length || !data.links.length) {
+      return;
+    }
+
+    try {
+      // Convert data to Google Charts format
+      const chartData = new window.google.visualization.DataTable();
+      chartData.addColumn('string', 'From');
+      chartData.addColumn('string', 'To');
+      chartData.addColumn('number', 'Value');
+      chartData.addColumn({ type: 'string', role: 'tooltip' });
+
+      // Add rows from our links data
+      const rows = data.links.map(link => {
+        const sourceNode = data.nodes.find((n, idx) => 
+          typeof link.source === 'string' ? n.id === link.source : idx === link.source
+        );
+        
+        const targetNode = data.nodes.find((n, idx) => 
+          typeof link.target === 'string' ? n.id === link.target : idx === link.target
+        );
+
+        if (!sourceNode || !targetNode) {
+          return null;
+        }
+
+        return [
+          sourceNode.name, 
+          targetNode.name, 
+          link.value,
+          `${sourceNode.name} → ${targetNode.name}: ${formatCurrency(link.value)}`
+        ];
+      }).filter(Boolean);
+
+      chartData.addRows(rows as any[]);
+
+      // Set chart options
+      const options = {
+        height: Number(height),
+        width: containerRef.current.clientWidth,
+        sankey: {
+          node: {
+            colors: data.nodes.map(node => {
+              if (node.type === 'deposit') {
+                return "#3B82F6"; // blue for deposits
+              } else if (node.type === 'category') {
+                // Try to get color from category name
+                const categoryName = node.category?.toLowerCase().replace(/\s+/g, '-');
+                // Use a default color if category not found
+                return categoryName ? `hsl(var(--${categoryName}))` : "#9CA3AF";
+              } else {
+                return "#EF4444"; // red for expenses
+              }
+            }),
+            label: {
+              fontSize: 14,
+              color: '#000',
+              bold: true,
+            },
+            width: 15,
+            nodePadding: 50
+          },
+          link: {
+            colorMode: 'gradient',
+            colors: ['#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6']
+          }
+        },
+        tooltip: { isHtml: false }
+      };
+
+      // Draw chart
+      const chart = new window.google.visualization.Sankey(containerRef.current);
+      chart.draw(chartData, options);
+
+      // Redraw chart on window resize
+      const handleResize = () => {
+        if (containerRef.current) {
+          options.width = containerRef.current.clientWidth;
+          chart.draw(chartData, options);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    } catch (error) {
+      console.error('Error rendering Google Sankey chart:', error);
+    }
+  }, [data, chartInitialized, height]);
+
+  if (loadError) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Money Flow</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center p-10">
+          <div className="text-red-500">
+            Error loading Google Charts API: {loadError.message}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isLoaded || !chartInitialized) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Money Flow</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center p-10">
+          <div className="animate-pulse flex flex-col items-center space-y-4">
+            <div className="w-3/4 h-10 bg-gray-200 rounded"></div>
+            <div className="w-full h-[400px] bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[400px]">
-      {processedData.nodes.length > 0 && processedData.links.length > 0 && (
-        <ResponsiveContainer width="100%" height={height}>
-          <Sankey
-            data={processedData}
-            node={(nodeProps: any) => <CustomNode {...nodeProps} containerWidth={containerWidth} />}
-            link={<CustomLink />}
-            nodePadding={50}
-            margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-            onClick={handleNodeClick}
-          >
-            <Tooltip content={<CustomTooltip />} />
-            <XAxis />
-          </Sankey>
-        </ResponsiveContainer>
-      )}
-    </div>
+    <div ref={containerRef} className="w-full" style={{ height: height }}></div>
   );
 };

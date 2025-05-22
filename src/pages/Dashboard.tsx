@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimePeriod } from "@/lib/types";
 import { filterExpensesByDate } from "@/lib/utils";
+import { SankeyChart } from "@/components/dashboard/SankeyChart";
 
 // Mock data for development
 import { getMockSankeyData, getMockStats, getMockCategories, getMockExpenses, getMockDeposits } from "@/lib/mock-data";
@@ -77,15 +78,14 @@ export function Dashboard() {
         </TabsContent>
       </Tabs>
       
-      {/* Temporarily comment out the SankeyChart component that's causing the error */}
-      {/* <Card>
+      <Card>
         <CardHeader>
           <CardTitle>Money Flow</CardTitle>
         </CardHeader>
         <CardContent className="h-[500px]">
           <SankeyChart data={sankeyData} />
         </CardContent>
-      </Card> */}
+      </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoryBreakdown 
