@@ -4,11 +4,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SankeyData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import * as d3 from "d3";
-import { sankey, sankeyLinkHorizontal } from "d3-sankey";
+import { sankey, sankeyLinkHorizontal, SankeyNode, SankeyLink } from "d3-sankey";
 
 interface SankeyChartProps {
   data: SankeyData;
   height?: number | string;
+}
+
+// Define extended types for D3 Sankey
+interface SankeyNodeExtended extends SankeyNode<any, any> {
+  index: number;
+  name: string;
+  category?: string;
+  type: "deposit" | "category" | "expense";
+  color: string;
+  value: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
+interface SankeyLinkExtended extends SankeyLink<any, any> {
+  source: SankeyNodeExtended;
+  target: SankeyNodeExtended;
+  width: number;
+  value: number;
+  category?: string;
 }
 
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
@@ -78,7 +100,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const { nodes, links } = sankeyGenerator({
         nodes: processedNodes,
         links: processedLinks
-      });
+      }) as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] };
 
       // Add links
       svg.append("g")
@@ -86,10 +108,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .data(links)
         .join("path")
         .attr("d", sankeyLinkHorizontal())
-        .attr("stroke-width", d => Math.max(1, d.width))
-        .attr("stroke", d => {
-          const sourceNode = nodes[d.source.index];
-          const targetNode = nodes[d.target.index];
+        .attr("stroke-width", (d: SankeyLinkExtended) => Math.max(1, d.width))
+        .attr("stroke", (d: SankeyLinkExtended) => {
+          const sourceNode = d.source;
+          const targetNode = d.target;
           
           // Creating a gradient for the link
           return d3.interpolateRgb(
@@ -100,9 +122,9 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("fill", "none")
         .attr("stroke-opacity", 0.5)
         .append("title")
-        .text(d => {
-          const sourceName = nodes[d.source.index].name;
-          const targetName = nodes[d.target.index].name;
+        .text((d: SankeyLinkExtended) => {
+          const sourceName = d.source.name;
+          const targetName = d.target.name;
           return `${sourceName} → ${targetName}: ${formatCurrency(d.value)}`;
         });
 
@@ -111,23 +133,23 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .selectAll("g")
         .data(nodes)
         .join("g")
-        .attr("transform", d => `translate(${d.x0},${d.y0})`);
+        .attr("transform", (d: SankeyNodeExtended) => `translate(${d.x0},${d.y0})`);
 
       // Add rectangles for nodes
       nodeGroup.append("rect")
-        .attr("height", d => d.y1 - d.y0)
-        .attr("width", d => d.x1 - d.x0)
-        .attr("fill", d => d.color || "#ccc")
+        .attr("height", (d: SankeyNodeExtended) => d.y1 - d.y0)
+        .attr("width", (d: SankeyNodeExtended) => d.x1 - d.x0)
+        .attr("fill", (d: SankeyNodeExtended) => d.color || "#ccc")
         .append("title")
-        .text(d => `${d.name}\n${formatCurrency(d.value)}`);
+        .text((d: SankeyNodeExtended) => `${d.name}\n${formatCurrency(d.value)}`);
 
       // Add node labels
       nodeGroup.append("text")
-        .attr("x", d => d.x0 < innerWidth / 2 ? (d.x1 - d.x0) + 6 : -6)
-        .attr("y", d => (d.y1 - d.y0) / 2)
+        .attr("x", (d: SankeyNodeExtended) => d.x0 < innerWidth / 2 ? (d.x1 - d.x0) + 6 : -6)
+        .attr("y", (d: SankeyNodeExtended) => (d.y1 - d.y0) / 2)
         .attr("dy", "0.35em")
-        .attr("text-anchor", d => d.x0 < innerWidth / 2 ? "start" : "end")
-        .text(d => d.name)
+        .attr("text-anchor", (d: SankeyNodeExtended) => d.x0 < innerWidth / 2 ? "start" : "end")
+        .text((d: SankeyNodeExtended) => d.name)
         .attr("font-size", "10px")
         .attr("font-weight", "bold")
         .attr("fill", "black");
@@ -153,7 +175,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           const { nodes: newNodes, links: newLinks } = sankeyGenerator({
             nodes: processedNodes,
             links: processedLinks
-          });
+          }) as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] };
           
           // Redraw links
           svg.append("g")
@@ -161,10 +183,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
             .data(newLinks)
             .join("path")
             .attr("d", sankeyLinkHorizontal())
-            .attr("stroke-width", d => Math.max(1, d.width))
-            .attr("stroke", d => {
-              const sourceNode = newNodes[d.source.index];
-              const targetNode = newNodes[d.target.index];
+            .attr("stroke-width", (d: SankeyLinkExtended) => Math.max(1, d.width))
+            .attr("stroke", (d: SankeyLinkExtended) => {
+              const sourceNode = d.source;
+              const targetNode = d.target;
               return d3.interpolateRgb(
                 sourceNode.color || "#a6cee3", 
                 targetNode.color || "#b2df8a"
@@ -178,19 +200,19 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
             .selectAll("g")
             .data(newNodes)
             .join("g")
-            .attr("transform", d => `translate(${d.x0},${d.y0})`);
+            .attr("transform", (d: SankeyNodeExtended) => `translate(${d.x0},${d.y0})`);
             
           newNodeGroup.append("rect")
-            .attr("height", d => d.y1 - d.y0)
-            .attr("width", d => d.x1 - d.x0)
-            .attr("fill", d => d.color || "#ccc");
+            .attr("height", (d: SankeyNodeExtended) => d.y1 - d.y0)
+            .attr("width", (d: SankeyNodeExtended) => d.x1 - d.x0)
+            .attr("fill", (d: SankeyNodeExtended) => d.color || "#ccc");
             
           newNodeGroup.append("text")
-            .attr("x", d => d.x0 < (newWidth - margin.left - margin.right) / 2 ? (d.x1 - d.x0) + 6 : -6)
-            .attr("y", d => (d.y1 - d.y0) / 2)
+            .attr("x", (d: SankeyNodeExtended) => d.x0 < (newWidth - margin.left - margin.right) / 2 ? (d.x1 - d.x0) + 6 : -6)
+            .attr("y", (d: SankeyNodeExtended) => (d.y1 - d.y0) / 2)
             .attr("dy", "0.35em")
-            .attr("text-anchor", d => d.x0 < (newWidth - margin.left - margin.right) / 2 ? "start" : "end")
-            .text(d => d.name)
+            .attr("text-anchor", (d: SankeyNodeExtended) => d.x0 < (newWidth - margin.left - margin.right) / 2 ? "start" : "end")
+            .text((d: SankeyNodeExtended) => d.name)
             .attr("font-size", "10px")
             .attr("font-weight", "bold")
             .attr("fill", "black");
