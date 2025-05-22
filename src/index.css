@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 221.2 83% 53.3%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -34,20 +35,25 @@
 
     --radius: 0.5rem;
 
+    /* Category Colors */
+    --groceries: 142.1 70.6% 45.3%;
+    --dining: 32.1 94.6% 43.7%;
+    --transportation: 262.1 83.3% 57.8%;
+    --entertainment: 291.5 64.9% 42.2%;
+    --shopping: 199.4 88.9% 48.4%;
+    --bills: 0.6 93.5% 66.9%;
+    --healthcare: 187 100% 42.2%;
+    --savings: 54.2 91.7% 77.3%;
+    --other: 262.1 83.3% 57.8%;
+    
+    /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -61,7 +67,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -79,14 +85,6 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -99,3 +97,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Styles */
+.sankey-link {
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.sankey-link:hover {
+  opacity: 0.8;
+}
+
+.floating-action-button {
+  @apply fixed bottom-6 right-6 z-50 bg-primary text-white rounded-full shadow-lg p-3 flex items-center justify-center;
+  transition: all 0.3s ease;
+}
+
+.floating-action-button:hover {
+  @apply transform scale-110;
+}
+
+.category-groceries { @apply bg-[hsl(var(--groceries))] text-white; }
+.category-dining { @apply bg-[hsl(var(--dining))] text-white; }
+.category-transportation { @apply bg-[hsl(var(--transportation))] text-white; }
+.category-entertainment { @apply bg-[hsl(var(--entertainment))] text-white; }
+.category-shopping { @apply bg-[hsl(var(--shopping))] text-white; }
+.category-bills { @apply bg-[hsl(var(--bills))] text-white; }
+.category-healthcare { @apply bg-[hsl(var(--healthcare))] text-white; }
+.category-savings { @apply bg-[hsl(var(--savings))] text-black; }
+.category-other { @apply bg-[hsl(var(--other))] text-white; }

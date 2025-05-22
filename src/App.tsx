@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import AppLayout from "./components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,8 +17,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            {/* Add more routes as they are implemented */}
+            <Route path="deposits" element={<NotFound />} />
+            <Route path="categories" element={<NotFound />} />
+            <Route path="expenses" element={<NotFound />} />
+            <Route path="expenses/add" element={<NotFound />} />
+            <Route path="expenses/scan" element={<NotFound />} />
+            <Route path="expenses/import" element={<NotFound />} />
+            <Route path="goals" element={<NotFound />} />
+            <Route path="calendar" element={<NotFound />} />
+            <Route path="settings" element={<NotFound />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
