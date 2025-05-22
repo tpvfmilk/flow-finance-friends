@@ -1,4 +1,5 @@
 
+// Declare Google Charts API types globally
 declare global {
   interface Window {
     google: {
@@ -12,7 +13,7 @@ declare global {
       };
       visualization: {
         DataTable: new () => any;
-        Sankey: new (element: Element) => any;
+        Sankey: new (element: HTMLElement) => any;
         LineChart: any;
         BarChart: any;
         ComboChart: any;
