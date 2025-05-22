@@ -1,4 +1,3 @@
-
 import { SankeyData, Category, Expense } from "./types";
 import { generateId, getHexColor } from "./utils";
 
@@ -9,9 +8,6 @@ export function getMockSankeyData(): SankeyData {
       // Deposit sources
       { name: "Person 1", id: "person1", type: "deposit", value: 25848 },
       { name: "Person 2", id: "person2", type: "deposit", value: 7508.97 },
-      
-      // Joint account node
-      { name: "Joint Account", id: "joint", type: "joint", value: 33356.97 },
       
       // Categories
       { name: "Groceries", id: "cat1", type: "category", value: 5895.47, category: "groceries" },
@@ -30,17 +26,18 @@ export function getMockSankeyData(): SankeyData {
       { name: "Movie Night", id: "goal6", type: "goal", value: 105, category: "entertainment" },
     ],
     links: [
-      // Person to joint account
-      { source: "person1", target: "joint", value: 25848 },
-      { source: "person2", target: "joint", value: 7508.97 },
-      
-      // Joint account to categories
-      { source: "joint", target: "cat1", value: 5895.47 },
-      { source: "joint", target: "cat2", value: 10508.97 },
-      { source: "joint", target: "cat3", value: 5000 },
-      { source: "joint", target: "cat4", value: 6000 },
-      { source: "joint", target: "cat5", value: 5848 },
-      { source: "joint", target: "cat6", value: 105 },
+      // Person to categories (will be transformed to go through joint account)
+      { source: "person1", target: "cat1", value: 4000 },
+      { source: "person1", target: "cat2", value: 8000 },
+      { source: "person1", target: "cat3", value: 4000 },
+      { source: "person1", target: "cat4", value: 5000 },
+      { source: "person1", target: "cat5", value: 4848 },
+      { source: "person2", target: "cat1", value: 1895.47 },
+      { source: "person2", target: "cat2", value: 2508.97 },
+      { source: "person2", target: "cat3", value: 1000 },
+      { source: "person2", target: "cat4", value: 1000 },
+      { source: "person2", target: "cat5", value: 1000 },
+      { source: "person2", target: "cat6", value: 105 },
       
       // Categories to goals
       { source: "cat1", target: "goal1", value: 3500, category: "groceries" },

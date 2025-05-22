@@ -14,7 +14,7 @@ interface SankeyNodeExtended extends SankeyNode<any, any> {
   index: number;
   name: string;
   category?: string;
-  type: "deposit" | "joint" | "category" | "expense";
+  type: "deposit" | "joint" | "category" | "expense" | "goal";
   color: string;
   value: number;
   x0: number;
@@ -64,6 +64,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const depositNodes = data.nodes.filter(node => node.type === "deposit");
       const categoryNodes = data.nodes.filter(node => node.type === "category");
       const expenseNodes = data.nodes.filter(node => node.type === "expense");
+      const goalNodes = data.nodes.filter(node => node.type === "goal");
       
       // Calculate total deposit amount
       const totalDepositAmount = depositNodes.reduce((total, node) => total + node.value, 0);
@@ -82,9 +83,11 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       // Add all nodes including the joint account node
       const processedNodes = [
         ...depositNodes.map((node, index) => {
-          nodeMap.set(node.id || index.toString(), index);
+          const nodeId = node.id || `deposit-${index}`;
+          nodeMap.set(nodeId, index);
           return {
             ...node,
+            id: nodeId,
             index,
             name: node.name,
             type: node.type,
@@ -101,9 +104,11 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         },
         ...categoryNodes.map((node, index) => {
           const nodeIndex = index + depositNodes.length + 1;
-          nodeMap.set(node.id || node.name, nodeIndex);
+          const nodeId = node.id || `category-${index}`;
+          nodeMap.set(nodeId, nodeIndex);
           return {
             ...node,
+            id: nodeId,
             index: nodeIndex,
             name: node.name,
             category: node.category || '',
@@ -113,9 +118,24 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         }),
         ...expenseNodes.map((node, index) => {
           const nodeIndex = index + depositNodes.length + categoryNodes.length + 1;
-          nodeMap.set(node.id || node.name, nodeIndex);
+          const nodeId = node.id || `expense-${index}`;
+          nodeMap.set(nodeId, nodeIndex);
           return {
             ...node,
+            id: nodeId,
+            index: nodeIndex,
+            name: node.name,
+            type: node.type,
+            color: getNodeColor(node)
+          };
+        }),
+        ...goalNodes.map((node, index) => {
+          const nodeIndex = index + depositNodes.length + categoryNodes.length + expenseNodes.length + 1;
+          const nodeId = node.id || `goal-${index}`;
+          nodeMap.set(nodeId, nodeIndex);
+          return {
+            ...node,
+            id: nodeId,
             index: nodeIndex,
             name: node.name,
             type: node.type,
@@ -126,7 +146,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       
       // Create links from deposits to joint account
       const depositToJointLinks = depositNodes.map(node => ({
-        source: nodeMap.get(node.id || node.name),
+        source: nodeMap.get(node.id || `deposit-${nodeMap.get(node.id)}`),
         target: depositNodes.length, // Joint account node index
         value: node.value
       }));
@@ -138,13 +158,20 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         return sourceNode && sourceNode.type === 'deposit';
       }).map(link => {
         const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
+        const target = nodeMap.get(targetId);
+        
+        if (target === undefined) {
+          console.warn(`Target node not found for link: ${targetId}`);
+          return null;
+        }
+        
         return {
           source: depositNodes.length, // Joint account node index
-          target: nodeMap.get(targetId),
+          target,
           value: link.value,
           category: link.category || ''
         };
-      });
+      }).filter(Boolean); // Remove null links
       
       // Keep category to expense links as they are
       const categoryToExpenseLinks = data.links.filter(link => {
@@ -153,18 +180,28 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
         const targetNode = data.nodes.find(n => n.id === targetId);
         
-        return sourceNode && targetNode && sourceNode.type === 'category' && targetNode.type === 'expense';
+        return sourceNode && targetNode && 
+               ((sourceNode.type === 'category' && (targetNode.type === 'expense' || targetNode.type === 'goal')) || 
+                (sourceNode.type === 'expense' && targetNode.type === 'goal'));
       }).map(link => {
         const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
         const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
         
+        const source = nodeMap.get(sourceId);
+        const target = nodeMap.get(targetId);
+        
+        if (source === undefined || target === undefined) {
+          console.warn(`Source or target node not found for link: ${sourceId} -> ${targetId}`);
+          return null;
+        }
+        
         return {
-          source: nodeMap.get(sourceId),
-          target: nodeMap.get(targetId),
+          source,
+          target,
           value: link.value,
           category: link.category || ''
         };
-      });
+      }).filter(Boolean); // Remove null links
       
       // Combine all links
       const processedLinks = [
@@ -172,6 +209,17 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         ...jointToCategoryLinks,
         ...categoryToExpenseLinks
       ];
+
+      console.log("Processed Nodes:", processedNodes);
+      console.log("Processed Links:", processedLinks);
+      console.log("Node Map:", Array.from(nodeMap.entries()));
+
+      // Check for potential issues with the links
+      processedLinks.forEach(link => {
+        if (link.source === undefined || link.target === undefined) {
+          console.error("Invalid link:", link);
+        }
+      });
 
       // Create the sankey generator
       const sankeyGenerator = sankey()
@@ -326,6 +374,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const categoryName = node.category?.toLowerCase().replace(/\s+/g, '-');
       // Use a default color if category not found
       return categoryName ? `hsl(var(--${categoryName}))` : "#9CA3AF";
+    } else if (node.type === 'goal') {
+      return "#8B5CF6"; // purple for goals
     } else {
       return "#EF4444"; // red for expenses
     }
