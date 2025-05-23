@@ -43,7 +43,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const sankeyGenerator = sankey()
         .nodeWidth(15)
         .nodePadding(10) // Reduced padding to align nodes closer
-        .nodeAlign(d3.sankeyLeft) // Align nodes to the left
+        .nodeAlign(d3.sankeyJustify) // Using sankeyJustify for alignment
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
       // Generate the sankey layout
@@ -149,7 +149,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           const sankeyGenerator = sankey()
             .nodeWidth(15)
             .nodePadding(10)
-            .nodeAlign(d3.sankeyLeft)
+            .nodeAlign(d3.sankeyJustify) // Using sankeyJustify for alignment
             .extent([[0, 0], [innerWidth, innerHeight]]);
           
           // Get processed data from previous calculation
