@@ -39,6 +39,7 @@ export const SankeyNodes = ({ nodes, innerWidth }: SankeyNodesProps) => {
               height={nodeHeight}
               width={nodeWidth}
               fill={node.color || "#ccc"}
+              className="sankey-node hover:opacity-80"
             >
               <title>{`${node.name || 'Unknown'}\n${formatCurrency(node.value || 0)}`}</title>
             </rect>
@@ -55,7 +56,7 @@ export const SankeyNodes = ({ nodes, innerWidth }: SankeyNodesProps) => {
             </text>
           </g>
         );
-      }).filter(Boolean)}
+      }).filter(Boolean)} {/* Filter out null elements */}
     </g>
   );
 };
