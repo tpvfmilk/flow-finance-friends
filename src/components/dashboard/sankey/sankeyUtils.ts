@@ -19,8 +19,14 @@ export function getNodeColor(node: any) {
   }
 }
 
-// Process nodes for D3 Sankey layout
+// Process nodes for D3 Sankey layout with enhanced validation
 export function processNodes(data: { nodes: SankeyNode[] }) {
+  // Validate input data
+  if (!data || !data.nodes || !Array.isArray(data.nodes) || data.nodes.length === 0) {
+    console.error("Invalid nodes data provided to processNodes:", data);
+    return { processedNodes: [], nodeMap: new Map(), depositNodes: [] };
+  }
+
   // Ensure all nodes have IDs
   const nodesWithIds = data.nodes.map((node, index) => {
     if (!node.id) {
@@ -30,11 +36,24 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
     return node;
   });
 
+  // Validate node values - ensure they are numeric and positive
+  const validatedNodes = nodesWithIds.map(node => {
+    const value = typeof node.value === 'number' && !isNaN(node.value) && node.value > 0 
+      ? node.value 
+      : 1; // Default to 1 if invalid
+      
+    if (value !== node.value) {
+      console.warn(`Node ${node.id} had invalid value ${node.value}, using ${value} instead`);
+    }
+    
+    return { ...node, value };
+  });
+
   // Classify nodes by type
-  const depositNodes = nodesWithIds.filter(node => node.type === "deposit");
-  const categoryNodes = nodesWithIds.filter(node => node.type === "category");
-  const expenseNodes = nodesWithIds.filter(node => node.type === "expense");
-  const goalNodes = nodesWithIds.filter(node => node.type === "goal");
+  const depositNodes = validatedNodes.filter(node => node.type === "deposit");
+  const categoryNodes = validatedNodes.filter(node => node.type === "category");
+  const expenseNodes = validatedNodes.filter(node => node.type === "expense");
+  const goalNodes = validatedNodes.filter(node => node.type === "goal");
   
   // Calculate total deposit amount
   const totalDepositAmount = depositNodes.reduce((total, node) => total + node.value, 0);
@@ -44,7 +63,7 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
     name: "Joint Account",
     id: "joint",
     type: "joint" as const,
-    value: totalDepositAmount,
+    value: Math.max(totalDepositAmount, 1), // Ensure minimum value of 1
   };
   
   // Create a node map for ID lookups
@@ -59,8 +78,9 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
         ...node,
         id: nodeId,
         index,
-        name: node.name,
+        name: node.name || `Deposit ${index + 1}`, // Ensure name exists
         type: node.type,
+        value: node.value,
         color: getNodeColor(node)
       };
     }),
@@ -80,9 +100,10 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
         ...node,
         id: nodeId,
         index: nodeIndex,
-        name: node.name,
+        name: node.name || `Category ${index + 1}`, // Ensure name exists
         category: node.category || '',
         type: node.type,
+        value: node.value,
         color: getNodeColor(node)
       };
     }),
@@ -94,8 +115,9 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
         ...node,
         id: nodeId,
         index: nodeIndex,
-        name: node.name,
+        name: node.name || `Expense ${index + 1}`, // Ensure name exists
         type: node.type,
+        value: node.value,
         color: getNodeColor(node)
       };
     }),
@@ -107,25 +129,45 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
         ...node,
         id: nodeId,
         index: nodeIndex,
-        name: node.name,
+        name: node.name || `Goal ${index + 1}`, // Ensure name exists
         type: node.type,
+        value: node.value,
         color: getNodeColor(node)
       };
     })
   ];
 
+  console.log("Processed nodes:", processedNodes.length, "Node map size:", nodeMap.size);
   return { processedNodes, nodeMap, depositNodes };
 }
 
-// Process links for D3 Sankey layout
+// Process links for D3 Sankey layout with enhanced validation
 export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] }, nodeMap: Map<string, number>, depositNodes: SankeyNode[]) {
+  // Validate input data
+  if (!data || !data.links || !Array.isArray(data.links) || data.links.length === 0) {
+    console.error("Invalid links data provided to processLinks:", data);
+    return [];
+  }
+  
   // Create links from deposits to joint account
-  const depositToJointLinks = depositNodes.map(node => ({
-    source: nodeMap.get(node.id),
-    target: depositNodes.length, // Joint account node index
-    value: node.value,
-    category: "deposit" // Add category for coloring
-  }));
+  const depositToJointLinks = depositNodes.map(node => {
+    // Ensure deposit index exists
+    const sourceIndex = nodeMap.get(node.id);
+    
+    if (sourceIndex === undefined) {
+      console.error(`Deposit node ${node.id} not found in nodeMap`);
+      return null;
+    }
+    
+    return {
+      source: sourceIndex,
+      target: depositNodes.length, // Joint account node index
+      value: Math.max(node.value, 0.1), // Ensure positive value
+      category: "deposit" // Add category for coloring
+    };
+  }).filter(Boolean); // Filter out null links
+  
+  console.log("Deposit to joint links created:", depositToJointLinks.length);
   
   // Create links from joint account to categories
   const jointToCategoryLinks = data.links.filter(link => {
@@ -137,18 +179,27 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     const targetNode = data.nodes.find(n => n.id === targetId);
     const target = nodeMap.get(targetId);
     
+    // Skip invalid links
     if (target === undefined) {
       console.warn(`Target node not found for link: ${targetId}`);
       return null;
     }
     
+    // Ensure value is positive
+    const linkValue = Math.max(link.value, 0.1);
+    if (linkValue !== link.value) {
+      console.warn(`Fixed invalid link value: ${link.value} -> ${linkValue}`);
+    }
+    
     return {
       source: depositNodes.length, // Joint account node index
       target,
-      value: link.value,
+      value: linkValue,
       category: targetNode?.category || link.category || ''
     };
   }).filter(Boolean); // Remove null links
+  
+  console.log("Joint to category links created:", jointToCategoryLinks.length);
   
   // Keep category to expense/goal links with proper categories
   const categoryToExpenseLinks = data.links.filter(link => {
@@ -170,34 +221,52 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     const source = nodeMap.get(sourceId);
     const target = nodeMap.get(targetId);
     
+    // Skip invalid links
     if (source === undefined || target === undefined) {
       console.warn(`Source or target node not found for link: ${sourceId} -> ${targetId}`);
       return null;
     }
     
+    // Ensure value is positive
+    const linkValue = Math.max(link.value, 0.1);
+    if (linkValue !== link.value) {
+      console.warn(`Fixed invalid link value: ${link.value} -> ${linkValue}`);
+    }
+    
     return {
       source,
       target,
-      value: link.value,
+      value: linkValue,
       category: sourceNode?.category || targetNode?.category || link.category || ''
     };
   }).filter(Boolean); // Remove null links
+  
+  console.log("Category to expense/goal links created:", categoryToExpenseLinks.length);
   
   // Combine all links
   const processedLinks = [
     ...depositToJointLinks,
     ...jointToCategoryLinks,
     ...categoryToExpenseLinks
-  ];
+  ].filter(link => link !== null);
 
-  // Deep verification of links before rendering
+  // Final validation check of all links
   const validProcessedLinks = processedLinks.filter(link => {
+    if (link === null) return false;
+    
     if (link.source === undefined || link.target === undefined) {
-      console.error("Invalid link detected:", link);
+      console.error("Invalid link detected - source or target undefined:", link);
       return false;
     }
+    
+    if (typeof link.value !== 'number' || isNaN(link.value) || link.value <= 0) {
+      console.error("Invalid link value:", link);
+      return false;
+    }
+    
     return true;
   });
 
+  console.log("Final valid links count:", validProcessedLinks.length);
   return validProcessedLinks;
 }
