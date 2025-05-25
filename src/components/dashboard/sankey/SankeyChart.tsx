@@ -13,6 +13,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     nodes: SankeyNodeExtended[];
     links: SankeyLinkExtended[];
   } | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Create linear gradient definitions for links
   const createGradientDefs = (svg: any, links: any[]) => {
@@ -50,14 +51,24 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     });
   };
 
+  // Initialize the container ref detection
+  useEffect(() => {
+    if (containerRef.current && !isInitialized) {
+      console.log("Container ref now available, initializing...");
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
+
   // Process data and create the chart
   useEffect(() => {
     console.log("=== SankeyChart useEffect triggered ===");
     console.log("Container ref:", containerRef.current);
+    console.log("Is initialized:", isInitialized);
     console.log("Data received:", data);
     
-    if (!containerRef.current) {
-      console.log("No container ref, returning");
+    // Wait for both container ref and initialization
+    if (!containerRef.current || !isInitialized) {
+      console.log("Waiting for container ref or initialization...");
       return;
     }
 
@@ -71,14 +82,12 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.log("Data.nodes type:", typeof data.nodes);
       console.log("Data.nodes is array:", Array.isArray(data.nodes));
       console.log("Data.nodes length:", data.nodes?.length);
-      console.log("Data.nodes content:", data.nodes);
     }
     
     if (data && 'links' in data) {
       console.log("Data.links type:", typeof data.links);
       console.log("Data.links is array:", Array.isArray(data.links));
       console.log("Data.links length:", data.links?.length);
-      console.log("Data.links content:", data.links);
     }
 
     // Add defensive checks for data
@@ -140,13 +149,13 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         nodeMap = nodeResult.nodeMap;
         depositNodes = nodeResult.depositNodes;
         
-        console.log("Processed nodes:", processedNodes);
-        console.log("Node map:", nodeMap);
-        console.log("Deposit nodes:", depositNodes);
+        console.log("Processed nodes length:", processedNodes?.length);
+        console.log("Node map size:", nodeMap?.size);
+        console.log("Deposit nodes length:", depositNodes?.length);
         
         console.log("Calling processLinks...");
         validProcessedLinks = processLinks(data, nodeMap, depositNodes);
-        console.log("Valid processed links:", validProcessedLinks);
+        console.log("Valid processed links length:", validProcessedLinks?.length);
         
       } catch (processError) {
         console.error("Error processing nodes and links:", processError);
@@ -188,13 +197,13 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         links: validProcessedLinks
       };
       
-      console.log("Sankey data object:", sankeyDataObj);
+      console.log("Sankey data object prepared");
       console.log("Calling sankeyGenerator...");
       
       // Generate the layout
       const result = sankeyGenerator(sankeyDataObj);
       
-      console.log("Sankey generator result:", result);
+      console.log("Sankey generator completed");
       
       // Validate the result
       if (!result) {
@@ -335,12 +344,12 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.error('Error stack:', error.stack);
       setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [data, height]);
+  }, [data, height, isInitialized]); // Added isInitialized to dependencies
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (containerRef.current && sankeyData) {
+      if (containerRef.current && sankeyData && isInitialized) {
         // Simple debounced resize handler
         setTimeout(() => {
           // This will trigger the main useEffect to re-render
@@ -350,7 +359,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [sankeyData]);
+  }, [sankeyData, isInitialized]);
 
   if (loadError) {
     return (
