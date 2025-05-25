@@ -14,6 +14,143 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     links: SankeyLinkExtended[];
   } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [tooltip, setTooltip] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    content: string;
+  }>({ visible: false, x: 0, y: 0, content: "" });
+
+  // Mock allocation and expenses data (in a real app, this would come from props)
+  const mockAllocations = {
+    "cat1": 2700, // Groceries
+    "cat2": 1800, // Dining
+    "cat3": 1350, // Transportation
+    "cat4": 900,  // Shopping
+    "cat5": 1350, // Bills
+    "cat6": 900   // Entertainment
+  };
+
+  const mockExpenses = {
+    "cat1": 400,  // Groceries spent
+    "cat2": 285,  // Dining spent
+    "cat3": 145,  // Transportation spent
+    "cat4": 250,  // Shopping spent
+    "cat5": 420,  // Bills spent
+    "cat6": 16    // Entertainment spent
+  };
+
+  const mockGoalTargets = {
+    "goal1": 3500, // Weekly Shop target
+    "goal2": 6000, // Special Dinners target
+    "goal3": 2000, // Car Repair target
+    "goal4": 4000, // New Laptop target
+    "goal5": 3800, // Utility Bills target
+    "goal6": 105   // Movie Night target
+  };
+
+  const mockGoalProgress = {
+    "goal1": 1200, // Weekly Shop saved so far
+    "goal2": 2400, // Special Dinners saved so far
+    "goal3": 800,  // Car Repair saved so far
+    "goal4": 1500, // New Laptop saved so far
+    "goal5": 1900, // Utility Bills saved so far
+    "goal6": 45    // Movie Night saved so far
+  };
+
+  // Function to get tooltip content based on node type
+  const getTooltipContent = (node: any) => {
+    if (node.type === "category") {
+      const allocated = mockAllocations[node.id] || 0;
+      const spent = mockExpenses[node.id] || 0;
+      const remaining = allocated - spent;
+      const percentSpent = allocated > 0 ? ((spent / allocated) * 100).toFixed(1) : "0";
+      
+      return `
+        <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs">
+          <h3 class="font-semibold text-gray-900 text-lg mb-3">${node.name}</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Allocated:</span>
+              <span class="font-medium text-green-600">$${allocated.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Spent:</span>
+              <span class="font-medium text-red-600">$${spent.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between border-t pt-2">
+              <span class="text-gray-600">Remaining:</span>
+              <span class="font-semibold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}">
+                $${remaining.toLocaleString()}
+              </span>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              ${percentSpent}% of budget used
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (node.type === "goal") {
+      const target = mockGoalTargets[node.id] || 0;
+      const saved = mockGoalProgress[node.id] || 0;
+      const remaining = target - saved;
+      const percentSaved = target > 0 ? ((saved / target) * 100).toFixed(1) : "0";
+      
+      return `
+        <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs">
+          <h3 class="font-semibold text-gray-900 text-lg mb-3">${node.name}</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Goal Target:</span>
+              <span class="font-medium text-blue-600">$${target.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Saved So Far:</span>
+              <span class="font-medium text-green-600">$${saved.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between border-t pt-2">
+              <span class="text-gray-600">Still Need:</span>
+              <span class="font-semibold ${remaining <= 0 ? 'text-green-600' : 'text-orange-600'}">
+                $${remaining.toLocaleString()}
+              </span>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              ${percentSaved}% of goal reached
+              ${remaining <= 0 ? ' 🎉 Goal Complete!' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (node.type === "deposit") {
+      return `
+        <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs">
+          <h3 class="font-semibold text-gray-900 text-lg mb-3">${node.name}</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Total Contributed:</span>
+              <span class="font-medium text-blue-600">$${node.value?.toLocaleString() || 'N/A'}</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              Individual contributor
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Default tooltip for other node types
+    return `
+      <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs">
+        <h3 class="font-semibold text-gray-900 text-lg mb-3">${node.name}</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Value:</span>
+            <span class="font-medium">$${node.value?.toLocaleString() || 'N/A'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  };
 
   // Create linear gradient definitions for links
   const createGradientDefs = (svg: any, links: any[]) => {
@@ -307,14 +444,14 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       
       console.log("=== Rendering nodes ===");
       
-      // Render nodes with enhanced styling
+      // Render nodes with enhanced styling and tooltip functionality
       const nodeGroup = svg.append("g")
         .selectAll("g")
         .data(result.nodes)
         .join("g")
         .attr("transform", (d: any) => `translate(${d.x0},${d.y0})`);
       
-      // Node rectangles with rounded corners
+      // Node rectangles with rounded corners and hover effects
       nodeGroup.append("rect")
         .attr("height", (d: any) => Math.max(4, d.y1 - d.y0))
         .attr("width", (d: any) => d.x1 - d.x0)
@@ -322,14 +459,35 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("rx", 3)
         .attr("ry", 3)
         .style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.1))")
+        .style("cursor", "pointer")
         .on("mouseover", function(event, d: any) {
+          // Enhanced visual feedback
           d3.select(this).style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.15))");
+          
+          // Show tooltip
+          const [mouseX, mouseY] = d3.pointer(event, containerRef.current);
+          setTooltip({
+            visible: true,
+            x: mouseX + 10,
+            y: mouseY - 10,
+            content: getTooltipContent(d)
+          });
         })
         .on("mouseout", function(event, d: any) {
           d3.select(this).style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.1))");
+          
+          // Hide tooltip
+          setTooltip({ visible: false, x: 0, y: 0, content: "" });
         })
-        .append("title")
-        .text((d: any) => `${d.name}\n$${d.value?.toLocaleString() || 'N/A'}`);
+        .on("mousemove", function(event, d: any) {
+          // Update tooltip position as mouse moves
+          const [mouseX, mouseY] = d3.pointer(event, containerRef.current);
+          setTooltip(prev => ({
+            ...prev,
+            x: mouseX + 10,
+            y: mouseY - 10
+          }));
+        });
       
       // Enhanced text labels with better positioning and INCREASED FONT SIZES
       nodeGroup.append("text")
@@ -416,11 +574,26 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   }
 
   return (
-    <div ref={containerRef} className="w-full bg-white rounded-lg" style={{ height }}>
-      {(!data?.nodes?.length) && (
-        <div className="w-full h-full flex items-center justify-center">
-          <p className="text-muted-foreground">No data available for Sankey chart</p>
-        </div>
+    <div className="relative w-full bg-white rounded-lg" style={{ height }}>
+      <div ref={containerRef} className="w-full h-full">
+        {(!data?.nodes?.length) && (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-muted-foreground">No data available for Sankey chart</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Custom Tooltip */}
+      {tooltip.visible && (
+        <div
+          className="absolute pointer-events-none z-50"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: 'translateY(-100%)'
+          }}
+          dangerouslySetInnerHTML={{ __html: tooltip.content }}
+        />
       )}
     </div>
   );
