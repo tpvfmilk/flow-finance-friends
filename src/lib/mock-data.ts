@@ -21,6 +21,26 @@ const UNIFIED_EXPENSES = {
   "cat6": 15.95    // Entertainment
 };
 
+// Unified goal targets for savings goals
+const UNIFIED_GOAL_TARGETS = {
+  "goal1": 3500, // Weekly Shop target
+  "goal2": 6000, // Special Dinners target
+  "goal3": 2000, // Car Repair target
+  "goal4": 4000, // New Laptop target
+  "goal5": 3800, // Utility Bills target
+  "goal6": 105   // Movie Night target
+};
+
+// Unified goal progress - calculated from remaining amounts after expenses
+const UNIFIED_GOAL_PROGRESS = {
+  "goal1": UNIFIED_ALLOCATIONS.cat1 - UNIFIED_EXPENSES.cat1, // $2,579.50
+  "goal2": UNIFIED_ALLOCATIONS.cat2 - UNIFIED_EXPENSES.cat2, // $1,714.25
+  "goal3": UNIFIED_ALLOCATIONS.cat3 - UNIFIED_EXPENSES.cat3, // $1,305.00
+  "goal4": UNIFIED_ALLOCATIONS.cat4 - UNIFIED_EXPENSES.cat4, // $650.00
+  "goal5": UNIFIED_ALLOCATIONS.cat5 - UNIFIED_EXPENSES.cat5, // $1,230.00
+  "goal6": UNIFIED_ALLOCATIONS.cat6 - UNIFIED_EXPENSES.cat6  // $884.05
+};
+
 // Mock data for development purposes
 export function getMockSankeyData(): SankeyData {
   return {
@@ -37,13 +57,13 @@ export function getMockSankeyData(): SankeyData {
       { name: "Bills", id: "cat5", type: "category", value: UNIFIED_ALLOCATIONS.cat5, category: "bills" },
       { name: "Entertainment", id: "cat6", type: "category", value: UNIFIED_ALLOCATIONS.cat6, category: "entertainment" },
       
-      // Goals (financial targets associated with categories)
-      { name: "Weekly Shop", id: "goal1", type: "goal", value: 3500, category: "groceries" },
-      { name: "Special Dinners", id: "goal2", type: "goal", value: 6000, category: "dining" },
-      { name: "Car Repair", id: "goal3", type: "goal", value: 2000, category: "transportation" },
-      { name: "New Laptop", id: "goal4", type: "goal", value: 4000, category: "shopping" },
-      { name: "Utility Bills", id: "goal5", type: "goal", value: 3800, category: "bills" },
-      { name: "Movie Night", id: "goal6", type: "goal", value: 105, category: "entertainment" },
+      // Goals (using actual flow amounts - remaining after expenses)
+      { name: "Weekly Shop", id: "goal1", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal1, category: "groceries" },
+      { name: "Special Dinners", id: "goal2", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal2, category: "dining" },
+      { name: "Car Repair", id: "goal3", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal3, category: "transportation" },
+      { name: "New Laptop", id: "goal4", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal4, category: "shopping" },
+      { name: "Utility Bills", id: "goal5", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal5, category: "bills" },
+      { name: "Movie Night", id: "goal6", type: "goal", value: UNIFIED_GOAL_PROGRESS.goal6, category: "entertainment" },
     ],
     links: [
       // Person to categories (balanced to match total allocations)
@@ -62,12 +82,12 @@ export function getMockSankeyData(): SankeyData {
       { source: "person2", target: "cat6", value: 510 },  // 40% of Entertainment + remainder
       
       // Categories to goals (remaining after expenses)
-      { source: "cat1", target: "goal1", value: UNIFIED_ALLOCATIONS.cat1 - UNIFIED_EXPENSES.cat1, category: "groceries" },
-      { source: "cat2", target: "goal2", value: UNIFIED_ALLOCATIONS.cat2 - UNIFIED_EXPENSES.cat2, category: "dining" },
-      { source: "cat3", target: "goal3", value: UNIFIED_ALLOCATIONS.cat3 - UNIFIED_EXPENSES.cat3, category: "transportation" },
-      { source: "cat4", target: "goal4", value: UNIFIED_ALLOCATIONS.cat4 - UNIFIED_EXPENSES.cat4, category: "shopping" },
-      { source: "cat5", target: "goal5", value: UNIFIED_ALLOCATIONS.cat5 - UNIFIED_EXPENSES.cat5, category: "bills" },
-      { source: "cat6", target: "goal6", value: UNIFIED_ALLOCATIONS.cat6 - UNIFIED_EXPENSES.cat6, category: "entertainment" },
+      { source: "cat1", target: "goal1", value: UNIFIED_GOAL_PROGRESS.goal1, category: "groceries" },
+      { source: "cat2", target: "goal2", value: UNIFIED_GOAL_PROGRESS.goal2, category: "dining" },
+      { source: "cat3", target: "goal3", value: UNIFIED_GOAL_PROGRESS.goal3, category: "transportation" },
+      { source: "cat4", target: "goal4", value: UNIFIED_GOAL_PROGRESS.goal4, category: "shopping" },
+      { source: "cat5", target: "goal5", value: UNIFIED_GOAL_PROGRESS.goal5, category: "bills" },
+      { source: "cat6", target: "goal6", value: UNIFIED_GOAL_PROGRESS.goal6, category: "entertainment" },
     ]
   };
 }
@@ -247,5 +267,10 @@ export function getMockDeposits() {
   };
 }
 
-// Export the unified data for use in Sankey tooltips
-export { UNIFIED_ALLOCATIONS, UNIFIED_EXPENSES };
+// Export the unified data for use in components
+export { 
+  UNIFIED_ALLOCATIONS, 
+  UNIFIED_EXPENSES, 
+  UNIFIED_GOAL_TARGETS, 
+  UNIFIED_GOAL_PROGRESS 
+};
