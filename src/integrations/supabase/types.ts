@@ -42,6 +42,36 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          allocation_percentage: number
+          budget_amount: number
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          allocation_percentage?: number
+          budget_amount?: number
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          allocation_percentage?: number
+          budget_amount?: number
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       consultants: {
         Row: {
           created_at: string | null
@@ -197,6 +227,83 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      deposits: {
+        Row: {
+          amount: number
+          contributor_name: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          contributor_name: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          contributor_name?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          date: string
+          description: string
+          id: string
+          merchant: string | null
+          receipt_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description: string
+          id?: string
+          merchant?: string | null
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          merchant?: string | null
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_accounts: {
         Row: {
@@ -1297,6 +1404,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      goals: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          current_amount: number
+          id: string
+          name: string
+          priority: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          current_amount?: number
+          id?: string
+          name: string
+          priority?: string
+          target_amount: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          current_amount?: number
+          id?: string
+          name?: string
+          priority?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
