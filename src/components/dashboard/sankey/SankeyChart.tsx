@@ -461,44 +461,20 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           const textAnchor = isLeftSide ? "start" : "end";
           
           if (d.type === "goal") {
-            // For goal nodes, show both current amount and goal target with enhanced formatting
+            // For goal nodes, show percentage and target amount in concise format
             const currentAmount = d.value || 0;
             const goalTarget = UNIFIED_GOAL_TARGETS[d.id] || 0;
             const progressPercent = goalTarget > 0 ? ((currentAmount / goalTarget) * 100).toFixed(1) : "0";
             
-            // Current amount (first line) - enhanced styling
+            // Single line showing progress percentage and goal target
             selection.append("text")
               .attr("x", xPos)
-              .attr("y", Math.max(nodeHeight / 2 + 8, 16))
+              .attr("y", Math.max(nodeHeight / 2 + 16, 24))
               .attr("dy", "0.35em")
               .attr("text-anchor", textAnchor)
-              .text(`Current: $${currentAmount.toLocaleString()}`)
-              .attr("font-size", config.fontSize.value)
-              .attr("font-weight", "600")
-              .attr("fill", "#059669")
-              .style("pointer-events", "none");
-            
-            // Goal target (second line) - enhanced styling
-            selection.append("text")
-              .attr("x", xPos)
-              .attr("y", Math.max(nodeHeight / 2 + 24, 32))
-              .attr("dy", "0.35em")
-              .attr("text-anchor", textAnchor)
-              .text(`Goal: $${goalTarget.toLocaleString()}`)
+              .text(`${progressPercent}% of $${goalTarget.toLocaleString()}`)
               .attr("font-size", config.fontSize.value)
               .attr("font-weight", "500")
-              .attr("fill", "#1D4ED8")
-              .style("pointer-events", "none");
-              
-            // Progress indicator (third line) - new addition
-            selection.append("text")
-              .attr("x", xPos)
-              .attr("y", Math.max(nodeHeight / 2 + 40, 48))
-              .attr("dy", "0.35em")
-              .attr("text-anchor", textAnchor)
-              .text(`${progressPercent}% complete`)
-              .attr("font-size", "10px")
-              .attr("font-weight", "400")
               .attr("fill", "#6B7280")
               .style("pointer-events", "none");
           } else {
