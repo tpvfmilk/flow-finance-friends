@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -182,10 +181,10 @@ export function Dashboard() {
       { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
-      // Category nodes
+      // Category nodes - now with actual allocated amounts
       ...categories.map(cat => ({
         name: cat.name,
-        value: expenses.filter(exp => exp.categoryId === cat.id).reduce((sum, exp) => sum + exp.amount, 0),
+        value: allocations[cat.id] || 0,
         type: "category" as const,
         id: cat.id,
         category: cat.name
@@ -213,13 +212,13 @@ export function Dashboard() {
         value: partner2Deposits,
         category: "deposit"
       },
-      // Joint Account to Categories
+      // Joint Account to Categories - now with allocated amounts
       ...categories.map((cat, index) => {
-        const categoryExpenses = expenses.filter(exp => exp.categoryId === cat.id).reduce((sum, exp) => sum + exp.amount, 0);
+        const allocatedAmount = allocations[cat.id] || 0;
         return {
           source: 2,
           target: 3 + index,
-          value: categoryExpenses,
+          value: allocatedAmount,
           category: cat.name
         };
       }).filter(link => link.value > 0),
