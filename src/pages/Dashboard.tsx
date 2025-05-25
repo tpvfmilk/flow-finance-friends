@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +57,8 @@ export function Dashboard() {
     }
   });
 
-  const { data: deposits = [] } = useQuery({
+  // Keep the raw deposit data for easier access to database fields
+  const { data: rawDeposits = [] } = useQuery({
     queryKey: ['deposits'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -67,15 +67,7 @@ export function Dashboard() {
         .order('date', { ascending: false });
       
       if (error) throw error;
-      return data.map(dep => ({
-        id: dep.id,
-        date: dep.date,
-        type: dep.type as "recurring" | "one-off",
-        person1Amount: dep.contributor_name === 'Tyler' ? Number(dep.amount) : 0,
-        person2Amount: dep.contributor_name === 'Jenn' ? Number(dep.amount) : 0,
-        description: dep.description || `${dep.type} deposit`,
-        allocations: {} as Record<string, number>
-      }));
+      return data;
     }
   });
 
@@ -111,8 +103,8 @@ export function Dashboard() {
   // Filter expenses by time period
   const filteredExpenses = filterExpensesByDate(expenses, timePeriod);
   
-  // Calculate real-time statistics
-  const totalDeposits = deposits.reduce((sum, dep) => 
+  // Calculate real-time statistics using raw deposit data
+  const totalDeposits = rawDeposits.reduce((sum, dep) => 
     sum + Number(dep.amount), 0
   );
   
@@ -123,7 +115,7 @@ export function Dashboard() {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
-  const depositsThisMonth = deposits
+  const depositsThisMonth = rawDeposits
     .filter(dep => {
       const depDate = new Date(dep.date);
       return depDate.getMonth() === currentMonth && depDate.getFullYear() === currentYear;
@@ -201,14 +193,14 @@ export function Dashboard() {
       {
         source: 0,
         target: 2,
-        value: deposits.filter(d => d.contributor_name === (partnerSettings?.partner1_name || "Tyler")).reduce((sum, d) => sum + Number(d.amount), 0),
+        value: rawDeposits.filter(d => d.contributor_name === (partnerSettings?.partner1_name || "Tyler")).reduce((sum, d) => sum + Number(d.amount), 0),
         category: "deposit"
       },
       // Jenn to Joint Account
       {
         source: 1,
         target: 2,
-        value: deposits.filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn")).reduce((sum, d) => sum + Number(d.amount), 0),
+        value: rawDeposits.filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn")).reduce((sum, d) => sum + Number(d.amount), 0),
         category: "deposit"
       },
       // Joint Account to Categories
@@ -327,11 +319,15 @@ export function Dashboard() {
     totalAllocated: allocations
   };
 
-  // Create deposits array for RecentActivity
-  const depositsForActivity = deposits.map(dep => ({
-    ...dep,
+  // Create deposits array for RecentActivity - transform raw deposits to match expected interface
+  const depositsForActivity = rawDeposits.map(dep => ({
+    id: dep.id,
+    date: dep.date,
+    type: dep.type as "recurring" | "one-off",
     person1Amount: dep.contributor_name === (partnerSettings?.partner1_name || "Tyler") ? Number(dep.amount) : 0,
-    person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0
+    person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0,
+    description: dep.description || `${dep.type} deposit`,
+    allocations: {} as Record<string, number>
   }));
   
   return (
