@@ -1,9 +1,9 @@
-
 import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
 import { processNodes, processLinks } from "./sankeyUtils";
+import { UNIFIED_ALLOCATIONS, UNIFIED_EXPENSES } from "@/lib/mock-data";
 
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,25 +21,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     content: string;
   }>({ visible: false, x: 0, y: 0, content: "" });
 
-  // Mock allocation and expenses data (in a real app, this would come from props)
-  const mockAllocations = {
-    "cat1": 2700, // Groceries
-    "cat2": 1800, // Dining
-    "cat3": 1350, // Transportation
-    "cat4": 900,  // Shopping
-    "cat5": 1350, // Bills
-    "cat6": 900   // Entertainment
-  };
-
-  const mockExpenses = {
-    "cat1": 400,  // Groceries spent
-    "cat2": 285,  // Dining spent
-    "cat3": 145,  // Transportation spent
-    "cat4": 250,  // Shopping spent
-    "cat5": 420,  // Bills spent
-    "cat6": 16    // Entertainment spent
-  };
-
+  // Mock goal targets and progress (in a real app, this would come from props)
   const mockGoalTargets = {
     "goal1": 3500, // Weekly Shop target
     "goal2": 6000, // Special Dinners target
@@ -61,8 +43,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   // Function to get tooltip content based on node type
   const getTooltipContent = (node: any) => {
     if (node.type === "category") {
-      const allocated = mockAllocations[node.id] || 0;
-      const spent = mockExpenses[node.id] || 0;
+      const allocated = UNIFIED_ALLOCATIONS[node.id] || 0;
+      const spent = UNIFIED_EXPENSES[node.id] || 0;
       const remaining = allocated - spent;
       const percentSpent = allocated > 0 ? ((spent / allocated) * 100).toFixed(1) : "0";
       
