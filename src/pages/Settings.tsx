@@ -1,5 +1,6 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings as SettingsIcon, Download, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+
+interface PartnerSettings {
+  id?: string;
+  partner1_name: string;
+  partner2_name: string;
+}
 
 const Settings = () => {
   const [partnerNames, setPartnerNames] = useState({
@@ -23,9 +30,77 @@ const Settings = () => {
     darkMode: false
   });
 
+  const queryClient = useQueryClient();
+
+  // Fetch partner settings
+  const { data: partnerSettings } = useQuery({
+    queryKey: ['partner-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partner_settings')
+        .select('*')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      return data as PartnerSettings;
+    }
+  });
+
+  // Update partner names when data is loaded
+  useEffect(() => {
+    if (partnerSettings) {
+      setPartnerNames({
+        partner1: partnerSettings.partner1_name,
+        partner2: partnerSettings.partner2_name
+      });
+    }
+  }, [partnerSettings]);
+
+  // Save partner names mutation
+  const savePartnerNamesMutation = useMutation({
+    mutationFn: async (names: { partner1: string; partner2: string }) => {
+      const partnerData = {
+        partner1_name: names.partner1,
+        partner2_name: names.partner2
+      };
+
+      if (partnerSettings?.id) {
+        // Update existing record
+        const { data, error } = await supabase
+          .from('partner_settings')
+          .update(partnerData)
+          .eq('id', partnerSettings.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      } else {
+        // Insert new record
+        const { data, error } = await supabase
+          .from('partner_settings')
+          .insert([partnerData])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partner-settings'] });
+      toast.success("Partner names updated successfully!");
+    },
+    onError: (error) => {
+      toast.error("Failed to save partner names");
+      console.error(error);
+    }
+  });
+
   const handleSavePartnerNames = () => {
-    // This would typically save to a database or local storage
-    toast.success("Partner names updated successfully!");
+    savePartnerNamesMutation.mutate(partnerNames);
   };
 
   const handleExportData = () => {
@@ -73,7 +148,12 @@ const Settings = () => {
               onChange={(e) => setPartnerNames(prev => ({ ...prev, partner2: e.target.value }))}
             />
           </div>
-          <Button onClick={handleSavePartnerNames}>Save Partner Names</Button>
+          <Button 
+            onClick={handleSavePartnerNames}
+            disabled={savePartnerNamesMutation.isPending}
+          >
+            {savePartnerNamesMutation.isPending ? "Saving..." : "Save Partner Names"}
+          </Button>
         </CardContent>
       </Card>
 

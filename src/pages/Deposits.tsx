@@ -22,6 +22,12 @@ interface Deposit {
   frequency?: string;
 }
 
+interface PartnerSettings {
+  id: string;
+  partner1_name: string;
+  partner2_name: string;
+}
+
 const Deposits = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDeposit, setEditingDeposit] = useState<Deposit | null>(null);
@@ -35,6 +41,22 @@ const Deposits = () => {
   });
 
   const queryClient = useQueryClient();
+
+  // Fetch partner settings for dropdown options
+  const { data: partnerSettings } = useQuery({
+    queryKey: ['partner-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partner_settings')
+        .select('*')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      return data as PartnerSettings;
+    }
+  });
 
   // Fetch deposits
   const { data: deposits, isLoading } = useQuery({
@@ -170,6 +192,22 @@ const Deposits = () => {
   const totalDeposits = deposits?.reduce((sum, deposit) => sum + deposit.amount, 0) || 0;
   const contributors = [...new Set(deposits?.map(d => d.contributor_name) || [])];
 
+  // Get contributor options from partner settings
+  const getContributorOptions = () => {
+    const options = [];
+    if (partnerSettings?.partner1_name) {
+      options.push(partnerSettings.partner1_name);
+    }
+    if (partnerSettings?.partner2_name) {
+      options.push(partnerSettings.partner2_name);
+    }
+    // Fallback to default names if no partner settings
+    if (options.length === 0) {
+      options.push("Partner A", "Partner B");
+    }
+    return options;
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -205,12 +243,16 @@ const Deposits = () => {
               </div>
               <div>
                 <Label htmlFor="contributor_name">Contributor Name</Label>
-                <Input
-                  id="contributor_name"
-                  value={formData.contributor_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contributor_name: e.target.value }))}
-                  required
-                />
+                <Select value={formData.contributor_name} onValueChange={(value) => setFormData(prev => ({ ...prev, contributor_name: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select contributor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getContributorOptions().map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="type">Type</Label>
