@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -164,12 +165,21 @@ export function Dashboard() {
     currentBalance: allocations[category.id] || 0
   }));
 
+  // Calculate individual contributor amounts
+  const partner1Deposits = rawDeposits
+    .filter(d => d.contributor_name === (partnerSettings?.partner1_name || "Tyler"))
+    .reduce((sum, d) => sum + Number(d.amount), 0);
+  
+  const partner2Deposits = rawDeposits
+    .filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn"))
+    .reduce((sum, d) => sum + Number(d.amount), 0);
+
   // Generate Sankey data from real data
   const sankeyData = {
     nodes: [
-      // Source nodes (contributors)
-      { name: partnerSettings?.partner1_name || "Tyler", value: 0, type: "deposit" as const, id: "tyler" },
-      { name: partnerSettings?.partner2_name || "Jenn", value: 0, type: "deposit" as const, id: "jenn" },
+      // Source nodes (contributors) - now with proper values
+      { name: partnerSettings?.partner1_name || "Tyler", value: partner1Deposits, type: "deposit" as const, id: "tyler" },
+      { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
       // Category nodes
@@ -189,18 +199,18 @@ export function Dashboard() {
       }))
     ],
     links: [
-      // Tyler to Joint Account
+      // Tyler to Joint Account - now with proper value
       {
         source: 0,
         target: 2,
-        value: rawDeposits.filter(d => d.contributor_name === (partnerSettings?.partner1_name || "Tyler")).reduce((sum, d) => sum + Number(d.amount), 0),
+        value: partner1Deposits,
         category: "deposit"
       },
-      // Jenn to Joint Account
+      // Jenn to Joint Account - now with proper value
       {
         source: 1,
         target: 2,
-        value: rawDeposits.filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn")).reduce((sum, d) => sum + Number(d.amount), 0),
+        value: partner2Deposits,
         category: "deposit"
       },
       // Joint Account to Categories
