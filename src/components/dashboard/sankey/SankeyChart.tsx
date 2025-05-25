@@ -1,7 +1,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
-import { sankey, sankeyLinkHorizontal } from "d3-sankey";
+import { sankey, sankeyLinkHorizontal, sankeyLeft } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
 import { processNodes, processLinks } from "./sankeyUtils";
 
@@ -82,12 +82,14 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.log("Data.nodes type:", typeof data.nodes);
       console.log("Data.nodes is array:", Array.isArray(data.nodes));
       console.log("Data.nodes length:", data.nodes?.length);
+      console.log("First few nodes:", data.nodes?.slice(0, 3));
     }
     
     if (data && 'links' in data) {
       console.log("Data.links type:", typeof data.links);
       console.log("Data.links is array:", Array.isArray(data.links));
       console.log("Data.links length:", data.links?.length);
+      console.log("First few links:", data.links?.slice(0, 3));
     }
 
     // Add defensive checks for data
@@ -152,10 +154,12 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         console.log("Processed nodes length:", processedNodes?.length);
         console.log("Node map size:", nodeMap?.size);
         console.log("Deposit nodes length:", depositNodes?.length);
+        console.log("Processed nodes sample:", processedNodes?.slice(0, 3));
         
         console.log("Calling processLinks...");
         validProcessedLinks = processLinks(data, nodeMap, depositNodes);
         console.log("Valid processed links length:", validProcessedLinks?.length);
+        console.log("Valid processed links sample:", validProcessedLinks?.slice(0, 3));
         
       } catch (processError) {
         console.error("Error processing nodes and links:", processError);
@@ -181,29 +185,64 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         setLoadError(new Error("No valid links found after processing"));
         return;
       }
+
+      // Validate that all nodes have required properties
+      const invalidNodes = processedNodes.filter(node => 
+        typeof node.index !== 'number' || 
+        !node.name || 
+        typeof node.value !== 'number'
+      );
+      
+      if (invalidNodes.length > 0) {
+        console.error("Invalid nodes found:", invalidNodes);
+        setLoadError(new Error(`Found ${invalidNodes.length} invalid nodes`));
+        return;
+      }
+
+      // Validate that all links reference valid nodes
+      const maxNodeIndex = processedNodes.length - 1;
+      const invalidLinks = validProcessedLinks.filter(link => 
+        typeof link.source !== 'number' || 
+        typeof link.target !== 'number' ||
+        link.source < 0 || link.source > maxNodeIndex ||
+        link.target < 0 || link.target > maxNodeIndex ||
+        typeof link.value !== 'number' || link.value <= 0
+      );
+      
+      if (invalidLinks.length > 0) {
+        console.error("Invalid links found:", invalidLinks);
+        setLoadError(new Error(`Found ${invalidLinks.length} invalid links`));
+        return;
+      }
       
       console.log("=== Creating Sankey generator ===");
       
-      // Create the sankey generator
+      // Create the sankey generator with correct alignment
       const sankeyGenerator = sankey()
         .nodeWidth(24)
         .nodePadding(20)
-        .nodeAlign(d3.sankeyJustify)
+        .nodeAlign(sankeyLeft) // Fixed: use sankeyLeft instead of d3.sankeyJustify
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
       // Generate the sankey layout
       const sankeyDataObj = {
-        nodes: processedNodes,
-        links: validProcessedLinks
+        nodes: processedNodes.map(node => ({ ...node })), // Create clean copies
+        links: validProcessedLinks.map(link => ({ ...link })) // Create clean copies
       };
       
-      console.log("Sankey data object prepared");
+      console.log("Sankey data object prepared:", sankeyDataObj);
       console.log("Calling sankeyGenerator...");
       
-      // Generate the layout
-      const result = sankeyGenerator(sankeyDataObj);
-      
-      console.log("Sankey generator completed");
+      // Generate the layout with better error handling
+      let result;
+      try {
+        result = sankeyGenerator(sankeyDataObj);
+        console.log("Sankey generator completed successfully");
+      } catch (sankeyError) {
+        console.error("Sankey generator error:", sankeyError);
+        setLoadError(new Error(`Sankey generation failed: ${sankeyError.message}`));
+        return;
+      }
       
       // Validate the result
       if (!result) {
@@ -344,7 +383,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.error('Error stack:', error.stack);
       setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [data, height, isInitialized]); // Added isInitialized to dependencies
+  }, [data, height, isInitialized]);
 
   // Handle window resize
   useEffect(() => {

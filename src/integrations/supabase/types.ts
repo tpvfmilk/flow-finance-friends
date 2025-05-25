@@ -118,6 +118,86 @@ export type Database = {
           },
         ]
       }
+      debt_profile_loans: {
+        Row: {
+          balance: number
+          created_at: string
+          custom_payment: number
+          debt_profile_id: string
+          id: string
+          interest_rate: number
+          loan_type: string
+          minimum_payment: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          custom_payment?: number
+          debt_profile_id: string
+          id?: string
+          interest_rate?: number
+          loan_type?: string
+          minimum_payment?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          custom_payment?: number
+          debt_profile_id?: string
+          id?: string
+          interest_rate?: number
+          loan_type?: string
+          minimum_payment?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_profile_loans_debt_profile_id_fkey"
+            columns: ["debt_profile_id"]
+            isOneToOne: false
+            referencedRelation: "debt_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debt_profiles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          optimization_strategy: string
+          total_monthly_budget: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          optimization_strategy?: string
+          total_monthly_budget?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          optimization_strategy?: string
+          total_monthly_budget?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       finance_accounts: {
         Row: {
           account_number_last4: string | null

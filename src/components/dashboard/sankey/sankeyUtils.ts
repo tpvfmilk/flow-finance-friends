@@ -1,4 +1,3 @@
-
 import { SankeyNode, SankeyLink } from "@/lib/types";
 import * as d3 from "d3";
 
@@ -60,10 +59,15 @@ export function getNodeColor(node: any) {
 
 // Process nodes for D3 Sankey layout
 export function processNodes(data: { nodes: SankeyNode[] }) {
+  console.log("=== processNodes function called ===");
+  console.log("Input data:", data);
+  
   // Validate input
   if (!data || !Array.isArray(data.nodes)) {
     throw new Error("Invalid data: nodes must be an array");
   }
+
+  console.log("Number of input nodes:", data.nodes.length);
 
   // Ensure all nodes have IDs and required properties
   const nodesWithIds = data.nodes.map((node, index) => {
@@ -75,16 +79,33 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
       console.warn(`Node missing ID, assigning one based on index and type: ${index}-${node.type}`);
       return { ...node, id: `${node.type}-${index}` };
     }
+    
+    // Ensure node has required properties
+    if (!node.name) {
+      throw new Error(`Node ${node.id} is missing name property`);
+    }
+    
+    if (typeof node.value !== 'number' || node.value < 0) {
+      throw new Error(`Node ${node.id} has invalid value: ${node.value}`);
+    }
+    
     return node;
   });
+
+  console.log("Nodes with IDs:", nodesWithIds);
 
   // Classify nodes by type
   const depositNodes = nodesWithIds.filter(node => node.type === "deposit");
   const categoryNodes = nodesWithIds.filter(node => node.type === "category");
   const goalNodes = nodesWithIds.filter(node => node.type === "goal");
   
+  console.log("Deposit nodes:", depositNodes.length);
+  console.log("Category nodes:", categoryNodes.length);
+  console.log("Goal nodes:", goalNodes.length);
+  
   // Calculate total deposit amount
   const totalDepositAmount = depositNodes.reduce((total, node) => total + (node.value || 0), 0);
+  console.log("Total deposit amount:", totalDepositAmount);
   
   // Create joint account node
   const jointAccountNode = {
@@ -96,70 +117,91 @@ export function processNodes(data: { nodes: SankeyNode[] }) {
   
   // Create a node map for ID lookups
   const nodeMap = new Map();
+  let currentIndex = 0;
   
   // Add all nodes to the processed array with correct indices and enhanced colors
-  const processedNodes = [
-    // Deposit nodes (left side)
-    ...depositNodes.map((node, index) => {
-      const nodeId = node.id || `deposit-${index}`;
-      nodeMap.set(nodeId, index);
-      return {
-        ...node,
-        id: nodeId,
-        index,
-        name: node.name,
-        type: node.type,
-        originalIndex: index,
-        color: getNodeColor({ ...node, originalIndex: index })
-      };
-    }),
-    // Joint account node (middle-left)
-    {
-      name: jointAccountNode.name,
-      id: jointAccountNode.id,
-      type: jointAccountNode.type,
-      value: jointAccountNode.value,
-      index: depositNodes.length,
-      color: getNodeColor({ type: 'joint' })
-    },
-    // Category nodes (middle-right)
-    ...categoryNodes.map((node, index) => {
-      const nodeIndex = index + depositNodes.length + 1;
-      const nodeId = node.id || `category-${index}`;
-      nodeMap.set(nodeId, nodeIndex);
-      return {
-        ...node,
-        id: nodeId,
-        index: nodeIndex,
-        name: node.name,
-        category: node.category || '',
-        type: node.type,
-        originalIndex: index,
-        color: getNodeColor({ ...node, type: 'category' })
-      };
-    }),
-    // Goal nodes (right side) - treating goals as final destinations
-    ...goalNodes.map((node, index) => {
-      const nodeIndex = index + depositNodes.length + categoryNodes.length + 1;
-      const nodeId = node.id || `goal-${index}`;
-      nodeMap.set(nodeId, nodeIndex);
-      return {
-        ...node,
-        id: nodeId,
-        index: nodeIndex,
-        name: node.name,
-        type: node.type,
-        originalIndex: index,
-        color: getNodeColor({ ...node, type: 'goal' })
-      };
-    })
-  ];
+  const processedNodes = [];
+  
+  // Deposit nodes (left side) - indices 0 to depositNodes.length-1
+  depositNodes.forEach((node, index) => {
+    const nodeId = node.id || `deposit-${index}`;
+    nodeMap.set(nodeId, currentIndex);
+    processedNodes.push({
+      ...node,
+      id: nodeId,
+      index: currentIndex,
+      name: node.name,
+      type: node.type,
+      value: node.value,
+      originalIndex: index,
+      color: getNodeColor({ ...node, originalIndex: index })
+    });
+    currentIndex++;
+  });
+  
+  // Joint account node (middle-left) - index depositNodes.length
+  nodeMap.set(jointAccountNode.id, currentIndex);
+  processedNodes.push({
+    name: jointAccountNode.name,
+    id: jointAccountNode.id,
+    type: jointAccountNode.type,
+    value: jointAccountNode.value,
+    index: currentIndex,
+    color: getNodeColor({ type: 'joint' })
+  });
+  currentIndex++;
+  
+  // Category nodes (middle-right) - indices starting after joint node
+  categoryNodes.forEach((node, index) => {
+    const nodeId = node.id || `category-${index}`;
+    nodeMap.set(nodeId, currentIndex);
+    processedNodes.push({
+      ...node,
+      id: nodeId,
+      index: currentIndex,
+      name: node.name,
+      category: node.category || '',
+      type: node.type,
+      value: node.value,
+      originalIndex: index,
+      color: getNodeColor({ ...node, type: 'category' })
+    });
+    currentIndex++;
+  });
+  
+  // Goal nodes (right side) - indices starting after category nodes
+  goalNodes.forEach((node, index) => {
+    const nodeId = node.id || `goal-${index}`;
+    nodeMap.set(nodeId, currentIndex);
+    processedNodes.push({
+      ...node,
+      id: nodeId,
+      index: currentIndex,
+      name: node.name,
+      type: node.type,
+      value: node.value,
+      originalIndex: index,
+      color: getNodeColor({ ...node, type: 'goal' })
+    });
+    currentIndex++;
+  });
+
+  console.log("=== processNodes result ===");
+  console.log("Processed nodes count:", processedNodes.length);
+  console.log("Node map size:", nodeMap.size);
+  console.log("Processed nodes sample:", processedNodes.slice(0, 3));
+  console.log("Node map entries:", Array.from(nodeMap.entries()));
 
   return { processedNodes, nodeMap, depositNodes };
 }
 
 // Process links for D3 Sankey layout
 export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] }, nodeMap: Map<string, number>, depositNodes: SankeyNode[]) {
+  console.log("=== processLinks function called ===");
+  console.log("Input links count:", data.links?.length);
+  console.log("Node map size:", nodeMap.size);
+  console.log("Deposit nodes count:", depositNodes.length);
+  
   // Validate input
   if (!data || !Array.isArray(data.links) || !Array.isArray(data.nodes)) {
     throw new Error("Invalid data: links and nodes must be arrays");
@@ -169,12 +211,31 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     throw new Error("Invalid nodeMap: must be a Map instance");
   }
 
+  const processedLinks = [];
+
   // Create links from deposits to joint account
-  const depositToJointLinks = depositNodes.map(node => ({
-    source: nodeMap.get(node.id),
-    target: depositNodes.length, // Joint account node index
-    value: node.value || 0
-  }));
+  const jointNodeIndex = nodeMap.get("joint");
+  if (typeof jointNodeIndex !== 'number') {
+    throw new Error("Joint account node not found in node map");
+  }
+  
+  console.log("Joint node index:", jointNodeIndex);
+  
+  depositNodes.forEach((node, index) => {
+    const depositNodeIndex = nodeMap.get(node.id);
+    if (typeof depositNodeIndex !== 'number') {
+      console.warn(`Deposit node ${node.id} not found in node map`);
+      return;
+    }
+    
+    processedLinks.push({
+      source: depositNodeIndex,
+      target: jointNodeIndex,
+      value: node.value || 0
+    });
+  });
+  
+  console.log("Deposit to joint links created:", depositNodes.length);
   
   // Create links from joint account to categories
   const jointToCategoryLinks = data.links.filter(link => {
@@ -185,18 +246,26 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
     const target = nodeMap.get(targetId);
     
-    if (target === undefined) {
+    if (typeof target !== 'number') {
       console.warn(`Target node not found for link: ${targetId}`);
       return null;
     }
     
+    if (typeof link.value !== 'number' || link.value <= 0) {
+      console.warn(`Invalid link value: ${link.value}`);
+      return null;
+    }
+    
     return {
-      source: depositNodes.length, // Joint account node index
+      source: jointNodeIndex,
       target,
-      value: link.value || 0,
+      value: link.value,
       category: link.category || ''
     };
-  }).filter(Boolean); // Remove null links
+  }).filter((link): link is NonNullable<typeof link> => link !== null);
+  
+  processedLinks.push(...jointToCategoryLinks);
+  console.log("Joint to category links created:", jointToCategoryLinks.length);
   
   // Keep category to goal links as they are
   const categoryToGoalLinks = data.links.filter(link => {
@@ -214,34 +283,51 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     const source = nodeMap.get(sourceId);
     const target = nodeMap.get(targetId);
     
-    if (source === undefined || target === undefined) {
+    if (typeof source !== 'number' || typeof target !== 'number') {
       console.warn(`Source or target node not found for link: ${sourceId} -> ${targetId}`);
+      return null;
+    }
+    
+    if (typeof link.value !== 'number' || link.value <= 0) {
+      console.warn(`Invalid link value: ${link.value}`);
       return null;
     }
     
     return {
       source,
       target,
-      value: link.value || 0,
+      value: link.value,
       category: link.category || ''
     };
-  }).filter(Boolean); // Remove null links
+  }).filter((link): link is NonNullable<typeof link> => link !== null);
   
-  // Combine all links
-  const processedLinks = [
-    ...depositToJointLinks,
-    ...jointToCategoryLinks,
-    ...categoryToGoalLinks
-  ];
+  processedLinks.push(...categoryToGoalLinks);
+  console.log("Category to goal links created:", categoryToGoalLinks.length);
 
   // Deep verification of links before rendering
   const validProcessedLinks = processedLinks.filter(link => {
-    if (link.source === undefined || link.target === undefined || typeof link.value !== 'number') {
-      console.error("Invalid link detected:", link);
+    if (typeof link.source !== 'number' || typeof link.target !== 'number' || typeof link.value !== 'number') {
+      console.error("Invalid link detected - wrong types:", link);
       return false;
     }
+    
+    if (link.source < 0 || link.target < 0) {
+      console.error("Invalid link detected - negative indices:", link);
+      return false;
+    }
+    
+    if (link.value <= 0) {
+      console.error("Invalid link detected - non-positive value:", link);
+      return false;
+    }
+    
     return true;
   });
+
+  console.log("=== processLinks result ===");
+  console.log("Total processed links:", processedLinks.length);
+  console.log("Valid processed links:", validProcessedLinks.length);
+  console.log("Valid links sample:", validProcessedLinks.slice(0, 3));
 
   return validProcessedLinks;
 }
