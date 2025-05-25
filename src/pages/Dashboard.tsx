@@ -1,5 +1,7 @@
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { StatsSummary } from "@/components/dashboard/StatsSummary";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -9,42 +11,213 @@ import { TimePeriod, SortConfig, Category } from "@/lib/types";
 import { filterExpensesByDate } from "@/lib/utils";
 import { SankeyChart } from "@/components/dashboard/SankeyChart";
 
-// Mock data for development
-import { getMockSankeyData, getMockStats, getMockCategories, getMockExpenses, getMockDeposits } from "@/lib/mock-data";
-
 export function Dashboard() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
-  const [sankeyData, setSankeyData] = useState(getMockSankeyData());
-  const [stats, setStats] = useState(getMockStats());
-  const [categories, setCategories] = useState(getMockCategories());
-  const [expenses, setExpenses] = useState(getMockExpenses());
-  const [deposits, setDeposits] = useState(getMockDeposits());
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [pinnedCategoryIds, setPinnedCategoryIds] = useState<string[]>([]);
+
+  // Fetch real data from Supabase
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        percentage: Number(cat.allocation_percentage),
+        color: cat.color,
+        currentBalance: Number(cat.budget_amount),
+        isPinned: false
+      })) as Category[];
+    }
+  });
+
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data.map(exp => ({
+        id: exp.id,
+        amount: Number(exp.amount),
+        categoryId: exp.category_id || '',
+        description: exp.description,
+        date: exp.date,
+        type: "one-off" as const,
+        verified: true
+      }));
+    }
+  });
+
+  const { data: deposits = [] } = useQuery({
+    queryKey: ['deposits'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('deposits')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data.map(dep => ({
+        id: dep.id,
+        date: dep.date,
+        type: dep.type as "recurring" | "one-off",
+        person1Amount: dep.contributor_name === 'Tyler' ? Number(dep.amount) : 0,
+        person2Amount: dep.contributor_name === 'Jenn' ? Number(dep.amount) : 0,
+        description: dep.description || `${dep.type} deposit`,
+        allocations: {} as Record<string, number>
+      }));
+    }
+  });
+
+  const { data: goals = [] } = useQuery({
+    queryKey: ['goals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: partnerSettings } = useQuery({
+    queryKey: ['partner-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partner_settings')
+        .select('*')
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching partner settings:', error);
+        return null;
+      }
+      return data;
+    }
+  });
+
+  // Filter expenses by time period
+  const filteredExpenses = filterExpensesByDate(expenses, timePeriod);
   
+  // Calculate real-time statistics
+  const totalDeposits = deposits.reduce((sum, dep) => 
+    sum + dep.person1Amount + dep.person2Amount, 0
+  );
+  
+  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const remainingBalance = totalDeposits - totalExpenses;
+  
+  // Calculate monthly stats (current month)
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const depositsThisMonth = deposits
+    .filter(dep => {
+      const depDate = new Date(dep.date);
+      return depDate.getMonth() === currentMonth && depDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, dep) => sum + dep.person1Amount + dep.person2Amount, 0);
+    
+  const expensesThisMonth = expenses
+    .filter(exp => {
+      const expDate = new Date(exp.date);
+      return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, exp) => sum + exp.amount, 0);
+
+  const stats = {
+    totalDeposits,
+    totalExpenses,
+    remainingBalance,
+    depositsThisMonth,
+    expensesThisMonth
+  };
+
   // Create a map of category IDs to names for display purposes
   const categoryMap = categories.reduce((acc, category) => {
     acc[category.id] = category.name;
     return acc;
   }, {} as Record<string, string>);
-  
-  // Effect to update data when time period changes
-  useEffect(() => {
-    // Filter expenses by time period
-    const filteredExpenses = filterExpensesByDate(expenses, timePeriod);
-    
-    // Update stats based on filtered expenses
-    // For a real app, this would make API calls to get updated data
-    console.log(`Updating data for time period: ${timePeriod}`);
-    
-    // In a real app, this would be replaced with an API call or local data processing
-    setStats({
-      ...stats,
-      totalExpenses: filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0)
-    });
-    
-  }, [timePeriod]);
-  
+
+  // Generate Sankey data from real data
+  const sankeyData = {
+    nodes: [
+      // Source nodes (contributors)
+      { name: partnerSettings?.partner1_name || "Tyler", value: 0, type: "deposit" as const, id: "tyler" },
+      { name: partnerSettings?.partner2_name || "Jenn", value: 0, type: "deposit" as const, id: "jenn" },
+      // Joint account node
+      { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
+      // Category nodes
+      ...categories.map(cat => ({
+        name: cat.name,
+        value: expenses.filter(exp => exp.categoryId === cat.id).reduce((sum, exp) => sum + exp.amount, 0),
+        type: "category" as const,
+        id: cat.id,
+        category: cat.name
+      })),
+      // Goal nodes
+      ...goals.map(goal => ({
+        name: goal.name,
+        value: Number(goal.current_amount) || 0,
+        type: "goal" as const,
+        id: goal.id
+      }))
+    ],
+    links: [
+      // Tyler to Joint Account
+      {
+        source: 0,
+        target: 2,
+        value: deposits.filter(d => d.person1Amount > 0).reduce((sum, d) => sum + d.person1Amount, 0),
+        category: "deposit"
+      },
+      // Jenn to Joint Account
+      {
+        source: 1,
+        target: 2,
+        value: deposits.filter(d => d.person2Amount > 0).reduce((sum, d) => sum + d.person2Amount, 0),
+        category: "deposit"
+      },
+      // Joint Account to Categories
+      ...categories.map((cat, index) => {
+        const categoryExpenses = expenses.filter(exp => exp.categoryId === cat.id).reduce((sum, exp) => sum + exp.amount, 0);
+        return {
+          source: 2,
+          target: 3 + index,
+          value: categoryExpenses,
+          category: cat.name
+        };
+      }).filter(link => link.value > 0),
+      // Categories to Goals (if any goals are linked to categories)
+      ...goals.map((goal, goalIndex) => {
+        if (goal.category_id) {
+          const catIndex = categories.findIndex(cat => cat.id === goal.category_id);
+          if (catIndex !== -1) {
+            return {
+              source: 3 + catIndex,
+              target: 3 + categories.length + goalIndex,
+              value: Number(goal.current_amount) || 0,
+              category: goal.name
+            };
+          }
+        }
+        return null;
+      }).filter(Boolean)
+    ]
+  };
+
   // Handle sorting functionality
   const handleSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -85,8 +258,9 @@ export function Dashboard() {
       unpinnedCategories.sort((a, b) => {
         // Special handling for calculated values
         if (key === 'spent' || key === 'remaining' || key === 'allocated') {
-          const allocatedA = deposits.allocations[a.id] || 0;
-          const allocatedB = deposits.allocations[b.id] || 0;
+          // Calculate allocated amount based on budget_amount
+          const allocatedA = Number(a.currentBalance) || 0;
+          const allocatedB = Number(b.currentBalance) || 0;
           
           // Calculate expenses for each category
           const expensesA = expenses
@@ -126,31 +300,21 @@ export function Dashboard() {
   
   // Get sorted categories for display
   const sortedCategories = getSortedCategories();
-  
-  // Update Sankey data when sorting or pinning changes
-  useEffect(() => {
-    // Get the sorted category IDs to maintain the same order in Sankey
-    const categoryOrder = sortedCategories.map(cat => cat.id);
-    
-    // Update the Sankey data to reflect the new order
-    const updatedSankeyData = getMockSankeyData();
-    
-    // Sort category nodes based on our sorted categories
-    updatedSankeyData.nodes = updatedSankeyData.nodes.sort((a, b) => {
-      // Only sort category nodes
-      if (a.type === 'category' && b.type === 'category') {
-        const indexA = categoryOrder.indexOf(a.id || '');
-        const indexB = categoryOrder.indexOf(b.id || '');
-        
-        if (indexA !== -1 && indexB !== -1) {
-          return indexA - indexB;
-        }
-      }
-      return 0;
-    });
-    
-    setSankeyData(updatedSankeyData);
-  }, [sortConfig, pinnedCategoryIds]);
+
+  // Create deposits object with allocations for CategoryBreakdown
+  const depositsWithAllocations = {
+    totalAllocated: categories.reduce((acc, cat) => {
+      acc[cat.id] = Number(cat.currentBalance) || 0;
+      return acc;
+    }, {} as Record<string, number>)
+  };
+
+  // Create deposits array for RecentActivity
+  const depositsForActivity = deposits.map(dep => ({
+    ...dep,
+    person1Amount: dep.person1Amount,
+    person2Amount: dep.person2Amount
+  }));
   
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
@@ -230,8 +394,8 @@ export function Dashboard() {
             </h2>
             <CategoryBreakdown 
               categories={sortedCategories} 
-              expenses={expenses}
-              deposits={{ totalAllocated: deposits.allocations }}
+              expenses={filteredExpenses}
+              deposits={depositsWithAllocations}
               sortConfig={sortConfig}
               onSort={handleSort}
               pinnedCategoryIds={pinnedCategoryIds}
@@ -244,8 +408,8 @@ export function Dashboard() {
               Recent Activity
             </h2>
             <RecentActivity 
-              expenses={expenses} 
-              deposits={deposits.deposits} 
+              expenses={filteredExpenses} 
+              deposits={depositsForActivity} 
               categoryMap={categoryMap} 
             />
           </div>
