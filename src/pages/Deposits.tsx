@@ -19,6 +19,7 @@ interface Deposit {
   date: string;
   description?: string;
   type: string;
+  frequency?: string;
 }
 
 const Deposits = () => {
@@ -29,6 +30,7 @@ const Deposits = () => {
     contributor_name: "",
     description: "",
     type: "one-time",
+    frequency: "weekly",
     date: new Date().toISOString().split('T')[0]
   });
 
@@ -122,6 +124,7 @@ const Deposits = () => {
       contributor_name: "",
       description: "",
       type: "one-time",
+      frequency: "weekly",
       date: new Date().toISOString().split('T')[0]
     });
   };
@@ -134,6 +137,7 @@ const Deposits = () => {
       contributor_name: formData.contributor_name,
       description: formData.description || null,
       type: formData.type,
+      frequency: formData.type === "recurring" ? formData.frequency : null,
       date: formData.date
     };
 
@@ -151,6 +155,7 @@ const Deposits = () => {
       contributor_name: deposit.contributor_name,
       description: deposit.description || "",
       type: deposit.type,
+      frequency: deposit.frequency || "weekly",
       date: deposit.date.split('T')[0]
     });
     setIsDialogOpen(true);
@@ -221,6 +226,20 @@ const Deposits = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {formData.type === "recurring" && (
+                <div>
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select value={formData.frequency} onValueChange={(value) => setFormData(prev => ({ ...prev, frequency: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Textarea
@@ -299,6 +318,7 @@ const Deposits = () => {
                       <div className="font-medium">{deposit.contributor_name}</div>
                       <div className="text-sm text-muted-foreground">
                         {new Date(deposit.date).toLocaleDateString()} • {deposit.type}
+                        {deposit.frequency && ` (${deposit.frequency})`}
                         {deposit.description && ` • ${deposit.description}`}
                       </div>
                     </div>
