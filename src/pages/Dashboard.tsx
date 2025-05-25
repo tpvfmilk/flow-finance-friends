@@ -153,64 +153,103 @@ export function Dashboard() {
   }, [sortConfig, pinnedCategoryIds]);
   
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Track your joint financial flow and spending categories.
-        </p>
-      </div>
-      
-      <Tabs defaultValue="all" className="w-full" onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
-        <TabsList>
-          <TabsTrigger value="3m">3 Months</TabsTrigger>
-          <TabsTrigger value="6m">6 Months</TabsTrigger>
-          <TabsTrigger value="1y">1 Year</TabsTrigger>
-          <TabsTrigger value="ytd">Year to Date</TabsTrigger>
-          <TabsTrigger value="all">All Time</TabsTrigger>
-        </TabsList>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Track your joint financial flow and spending categories.
+            </p>
+          </div>
+        </div>
         
-        <TabsContent value="3m" className="mt-0">
-          <StatsSummary {...stats} />
-        </TabsContent>
-        <TabsContent value="6m" className="mt-0">
-          <StatsSummary {...stats} />
-        </TabsContent>
-        <TabsContent value="1y" className="mt-0">
-          <StatsSummary {...stats} />
-        </TabsContent>
-        <TabsContent value="ytd" className="mt-0">
-          <StatsSummary {...stats} />
-        </TabsContent>
-        <TabsContent value="all" className="mt-0">
-          <StatsSummary {...stats} />
-        </TabsContent>
-      </Tabs>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Money Flow</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[500px]">
-          <SankeyChart data={sankeyData} />
-        </CardContent>
-      </Card>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CategoryBreakdown 
-          categories={sortedCategories} 
-          expenses={expenses}
-          deposits={{ totalAllocated: deposits.allocations }}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          pinnedCategoryIds={pinnedCategoryIds}
-          onTogglePin={handleTogglePin}
-        />
-        <RecentActivity 
-          expenses={expenses} 
-          deposits={deposits.deposits} 
-          categoryMap={categoryMap} 
-        />
+        {/* Time Period Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <Tabs 
+            defaultValue="all" 
+            className="w-full" 
+            onValueChange={(v) => setTimePeriod(v as TimePeriod)}
+          >
+            <div className="border-b border-gray-100 px-6 pt-6">
+              <TabsList className="grid w-full max-w-md grid-cols-5 bg-gray-100">
+                <TabsTrigger value="3m" className="text-sm">3 Months</TabsTrigger>
+                <TabsTrigger value="6m" className="text-sm">6 Months</TabsTrigger>
+                <TabsTrigger value="1y" className="text-sm">1 Year</TabsTrigger>
+                <TabsTrigger value="ytd" className="text-sm">YTD</TabsTrigger>
+                <TabsTrigger value="all" className="text-sm">All Time</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Stats Summary for all tabs */}
+            <div className="p-6">
+              <TabsContent value="3m" className="mt-0">
+                <StatsSummary {...stats} />
+              </TabsContent>
+              <TabsContent value="6m" className="mt-0">
+                <StatsSummary {...stats} />
+              </TabsContent>
+              <TabsContent value="1y" className="mt-0">
+                <StatsSummary {...stats} />
+              </TabsContent>
+              <TabsContent value="ytd" className="mt-0">
+                <StatsSummary {...stats} />
+              </TabsContent>
+              <TabsContent value="all" className="mt-0">
+                <StatsSummary {...stats} />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+        
+        {/* Money Flow Chart */}
+        <Card className="shadow-sm border border-gray-100">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              Money Flow
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Visualize how money flows from deposits to spending categories
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="bg-gray-50 rounded-lg p-4" style={{ height: "520px" }}>
+              <SankeyChart data={sankeyData} height={500} />
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Category Breakdown and Recent Activity */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Category Breakdown
+            </h2>
+            <CategoryBreakdown 
+              categories={sortedCategories} 
+              expenses={expenses}
+              deposits={{ totalAllocated: deposits.allocations }}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              pinnedCategoryIds={pinnedCategoryIds}
+              onTogglePin={handleTogglePin}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Recent Activity
+            </h2>
+            <RecentActivity 
+              expenses={expenses} 
+              deposits={deposits.deposits} 
+              categoryMap={categoryMap} 
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
