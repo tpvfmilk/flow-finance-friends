@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +53,7 @@ const Goals = () => {
           id, name, target_amount, current_amount, target_date, category_id, priority,
           categories (name, color)
         `)
-        .order('target_date', { ascending: true, nullsLast: true });
+        .order('target_date', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
       return data as Goal[];
