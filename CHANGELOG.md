@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Responsive Layout Issues
+- **Issue**: Sankey Chart didn't resize properly on smaller screens, causing chart overflow and poor node spacing
+- **Root Cause**: Fixed chart dimensions and lack of responsive breakpoints
+- **Solution**: 
+  - Implemented responsive configuration with mobile/tablet/desktop breakpoints
+  - Added dynamic node width, padding, and margin adjustments based on screen size
+  - Enhanced resize handler with ResizeObserver for better performance
+  - Added responsive font sizing for optimal readability across devices
+- **Result**: Chart now properly adapts to all screen sizes with appropriate node spacing
+- **Files Modified**: `src/components/dashboard/sankey/SankeyChart.tsx`
+
+#### Goal Tooltip Data Mismatch
+- **Issue**: Goal tooltips showed incorrect "Saved So Far" amounts that didn't match Sankey flow values
+- **Root Cause**: Hardcoded goal progress data wasn't synchronized with actual remaining amounts
+- **Solution**: 
+  - Created `UNIFIED_GOAL_TARGETS` and `UNIFIED_GOAL_PROGRESS` constants
+  - Calculated goal progress from actual remaining amounts after expenses
+  - Updated goal nodes in Sankey to use actual flow amounts
+  - Synchronized tooltip data with Category Breakdown calculations
+- **Result**: Goal tooltips now show accurate progress matching Sankey flow amounts
+- **Files Modified**: 
+  - `src/lib/mock-data.ts`
+  - `src/components/dashboard/sankey/SankeyChart.tsx`
+
 #### Data Consistency Issues
 - **Issue**: Sankey Chart and Category Breakdown showed different financial values due to separate mock data sources
 - **Root Cause**: `getMockSankeyData()` and category/expense mock data were using different allocation and spending amounts
@@ -24,6 +48,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/components/dashboard/sankey/SankeyChart.tsx`
 
 ### Enhanced
+
+#### Responsive Design System
+- **Mobile Optimization** (< 640px):
+  - Node width: 16px, padding: 12px, margins: 15px
+  - Font sizes: 13px main text, 10px value text
+- **Tablet Optimization** (640px - 1024px):
+  - Node width: 20px, padding: 16px, margins: 18px
+  - Font sizes: 14px main text, 11px value text
+- **Desktop Optimization** (> 1024px):
+  - Node width: 24px, padding: 20px, margins: 20px
+  - Font sizes: 15px main text, 12px value text
+- **Enhanced Resize Handling**:
+  - ResizeObserver for efficient resize detection
+  - Immediate re-render on significant width changes (>50px)
+  - Debounced updates to prevent excessive re-rendering
+- **Files Modified**: `src/components/dashboard/sankey/SankeyChart.tsx`
 
 #### UI/UX Improvements
 - **Sidebar Spacing and Typography**:
@@ -44,6 +84,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/components/dashboard/sankey/SankeyChart.tsx`
 
 #### Data Architecture Improvements
+- **Unified Goal Data System**: 
+  - Added `UNIFIED_GOAL_TARGETS` for consistent goal target amounts
+  - Added `UNIFIED_GOAL_PROGRESS` calculated from remaining amounts after expenses
+  - Goal progress now reflects actual category remaining balances
+  - Exported unified goal constants for cross-component usage
 - **Mock Data Unification**: 
   - Centralized all financial data in unified constants for consistency
   - Created `UNIFIED_ALLOCATIONS` for category budget allocations
@@ -142,20 +187,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### D3 Sankey Integration
 - **Version**: Using d3-sankey v0.12.3 with d3 v7.9.0
 - **Configuration**:
-  - Node width: 24px
-  - Node padding: 20px
+  - Responsive node width: 16px-24px based on screen size
+  - Responsive node padding: 12px-20px based on screen size
   - Alignment: sankeyLeft for consistent layout
   - Proper extent configuration for responsive sizing
 
 #### Performance Optimizations
-- **Responsive Design**: Efficient window resize handling with debounced updates
+- **Responsive Design**: ResizeObserver for efficient resize detection with immediate re-render on significant changes
 - **Memory Management**: Proper cleanup of D3 selections and event listeners
-- **Render Optimization**: Conditional rendering based on data availability
+- **Render Optimization**: Conditional rendering based on data availability and width changes
+- **Debounced Updates**: Prevents excessive re-rendering during resize events
 
 #### Browser Compatibility
-- **Modern Browsers**: Full support for modern ES6+ features
+- **Modern Browsers**: Full support for modern ES6+ features and ResizeObserver
 - **SVG Rendering**: Cross-browser compatible SVG generation
 - **Event Handling**: Proper mouse event management across different browsers
+- **Fallback Support**: Window resize listener fallback for older browsers
 
 ---
 
@@ -169,6 +216,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 5. ✅ Visual hierarchy and readability improvements
 6. ✅ Sidebar spacing and typography improvements
 7. ✅ Data consistency between Sankey Chart and Category Breakdown
+8. ✅ Responsive layout issues and chart overflow on smaller screens
+9. ✅ Goal tooltip data mismatch with Sankey flow amounts
 
 ### Future Enhancements
 - [ ] Add animation transitions for data updates
