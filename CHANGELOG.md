@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Enhanced
+
+#### Enhanced Sankey Chart Goal Node Labels
+- **Feature**: Added comprehensive dual-line labels for goal nodes showing current amount, goal target, and progress percentage
+- **Visual Improvements**: 
+  - Enhanced typography with better font weights and colors
+  - Improved text positioning and spacing for better readability
+  - Added progress indicator for goal completion status
+  - Maintained responsive design across mobile, tablet, and desktop
+- **Three-Line Goal Display**:
+  - Line 1: "Current: $X,XXX" (amount saved) - Green styling
+  - Line 2: "Goal: $X,XXX" (target amount) - Blue styling  
+  - Line 3: "XX% complete" (progress indicator) - Gray styling
+- **Technical Enhancements**:
+  - Improved label positioning logic for better text layout
+  - Enhanced tooltip content for goal nodes
+  - Better color coding for different data types (current vs target)
+  - Maintained existing functionality for non-goal nodes
+- **Files Modified**: `src/components/dashboard/sankey/SankeyChart.tsx`
+
 ### Fixed
 
 #### Responsive Layout Issues
@@ -218,6 +238,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 7. ✅ Data consistency between Sankey Chart and Category Breakdown
 8. ✅ Responsive layout issues and chart overflow on smaller screens
 9. ✅ Goal tooltip data mismatch with Sankey flow amounts
+10. ✅ Enhanced Sankey chart dual-line labels for goal nodes
 
 ### Future Enhancements
 - [ ] Add animation transitions for data updates
