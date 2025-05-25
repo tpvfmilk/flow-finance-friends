@@ -452,26 +452,58 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       // Add value labels for nodes with sufficient height
       nodeGroup
         .filter((d: any) => (d.y1 - d.y0) > 20)
-        .append("text")
-        .attr("x", (d: any) => {
+        .each(function(d: any) {
+          const selection = d3.select(this);
           const nodeWidth = d.x1 - d.x0;
           const isLeftSide = d.x0 < innerWidth / 2;
-          return isLeftSide ? nodeWidth + 10 : -10;
-        })
-        .attr("y", (d: any) => {
           const nodeHeight = d.y1 - d.y0;
-          return Math.max(nodeHeight / 2 + 16, 24);
-        })
-        .attr("dy", "0.35em")
-        .attr("text-anchor", (d: any) => d.x0 < innerWidth / 2 ? "start" : "end")
-        .text((d: any) => {
-          if (!d.value) return '';
-          return `$${d.value.toLocaleString()}`;
-        })
-        .attr("font-size", config.fontSize.value)
-        .attr("font-weight", "500")
-        .attr("fill", "#6B7280")
-        .style("pointer-events", "none");
+          const xPos = isLeftSide ? nodeWidth + 10 : -10;
+          const textAnchor = isLeftSide ? "start" : "end";
+          
+          if (d.type === "goal") {
+            // For goal nodes, show both current amount and goal target
+            const currentAmount = d.value || 0;
+            const goalTarget = UNIFIED_GOAL_TARGETS[d.id] || 0;
+            
+            // Current amount (first line)
+            selection.append("text")
+              .attr("x", xPos)
+              .attr("y", Math.max(nodeHeight / 2 + 8, 16))
+              .attr("dy", "0.35em")
+              .attr("text-anchor", textAnchor)
+              .text(`Current: $${currentAmount.toLocaleString()}`)
+              .attr("font-size", config.fontSize.value)
+              .attr("font-weight", "500")
+              .attr("fill", "#059669")
+              .style("pointer-events", "none");
+            
+            // Goal target (second line)
+            selection.append("text")
+              .attr("x", xPos)
+              .attr("y", Math.max(nodeHeight / 2 + 24, 32))
+              .attr("dy", "0.35em")
+              .attr("text-anchor", textAnchor)
+              .text(`Goal: $${goalTarget.toLocaleString()}`)
+              .attr("font-size", config.fontSize.value)
+              .attr("font-weight", "400")
+              .attr("fill", "#6B7280")
+              .style("pointer-events", "none");
+          } else {
+            // For non-goal nodes, show single value as before
+            if (d.value) {
+              selection.append("text")
+                .attr("x", xPos)
+                .attr("y", Math.max(nodeHeight / 2 + 16, 24))
+                .attr("dy", "0.35em")
+                .attr("text-anchor", textAnchor)
+                .text(`$${d.value.toLocaleString()}`)
+                .attr("font-size", config.fontSize.value)
+                .attr("font-weight", "500")
+                .attr("fill", "#6B7280")
+                .style("pointer-events", "none");
+            }
+          }
+        });
         
       console.log("=== Chart rendering complete ===");
         
