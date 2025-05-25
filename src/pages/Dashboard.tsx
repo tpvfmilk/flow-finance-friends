@@ -113,7 +113,7 @@ export function Dashboard() {
   
   // Calculate real-time statistics
   const totalDeposits = deposits.reduce((sum, dep) => 
-    sum + dep.person1Amount + dep.person2Amount, 0
+    sum + Number(dep.amount), 0
   );
   
   const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -128,7 +128,7 @@ export function Dashboard() {
       const depDate = new Date(dep.date);
       return depDate.getMonth() === currentMonth && depDate.getFullYear() === currentYear;
     })
-    .reduce((sum, dep) => sum + dep.person1Amount + dep.person2Amount, 0);
+    .reduce((sum, dep) => sum + Number(dep.amount), 0);
     
   const expensesThisMonth = expenses
     .filter(exp => {
@@ -150,6 +150,27 @@ export function Dashboard() {
     acc[category.id] = category.name;
     return acc;
   }, {} as Record<string, string>);
+
+  // Calculate allocations based on category percentages and total deposits
+  const calculateAllocations = () => {
+    const allocations: Record<string, number> = {};
+    
+    categories.forEach(category => {
+      // Calculate allocated amount based on percentage of total deposits
+      const allocatedAmount = (totalDeposits * category.percentage) / 100;
+      allocations[category.id] = allocatedAmount;
+    });
+    
+    return allocations;
+  };
+
+  const allocations = calculateAllocations();
+
+  // Update categories with calculated allocated amounts
+  const categoriesWithAllocations = categories.map(category => ({
+    ...category,
+    currentBalance: allocations[category.id] || 0
+  }));
 
   // Generate Sankey data from real data
   const sankeyData = {
@@ -180,14 +201,14 @@ export function Dashboard() {
       {
         source: 0,
         target: 2,
-        value: deposits.filter(d => d.person1Amount > 0).reduce((sum, d) => sum + d.person1Amount, 0),
+        value: deposits.filter(d => d.contributor_name === (partnerSettings?.partner1_name || "Tyler")).reduce((sum, d) => sum + Number(d.amount), 0),
         category: "deposit"
       },
       // Jenn to Joint Account
       {
         source: 1,
         target: 2,
-        value: deposits.filter(d => d.person2Amount > 0).reduce((sum, d) => sum + d.person2Amount, 0),
+        value: deposits.filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn")).reduce((sum, d) => sum + Number(d.amount), 0),
         category: "deposit"
       },
       // Joint Account to Categories
@@ -242,8 +263,8 @@ export function Dashboard() {
   
   // Sort and organize categories (pinned categories first, then sorted)
   const getSortedCategories = () => {
-    // Create a copy with isPinned flag
-    const categoriesWithPinFlag = categories.map(category => ({
+    // Create a copy with isPinned flag and allocated amounts
+    const categoriesWithPinFlag = categoriesWithAllocations.map(category => ({
       ...category,
       isPinned: pinnedCategoryIds.includes(category.id)
     }));
@@ -259,8 +280,8 @@ export function Dashboard() {
         // Special handling for calculated values
         if (key === 'spent' || key === 'remaining' || key === 'allocated') {
           // Calculate allocated amount based on budget_amount
-          const allocatedA = Number(a.currentBalance) || 0;
-          const allocatedB = Number(b.currentBalance) || 0;
+          const allocatedA = allocations[a.id] || 0;
+          const allocatedB = allocations[b.id] || 0;
           
           // Calculate expenses for each category
           const expensesA = expenses
@@ -303,17 +324,14 @@ export function Dashboard() {
 
   // Create deposits object with allocations for CategoryBreakdown
   const depositsWithAllocations = {
-    totalAllocated: categories.reduce((acc, cat) => {
-      acc[cat.id] = Number(cat.currentBalance) || 0;
-      return acc;
-    }, {} as Record<string, number>)
+    totalAllocated: allocations
   };
 
   // Create deposits array for RecentActivity
   const depositsForActivity = deposits.map(dep => ({
     ...dep,
-    person1Amount: dep.person1Amount,
-    person2Amount: dep.person2Amount
+    person1Amount: dep.contributor_name === (partnerSettings?.partner1_name || "Tyler") ? Number(dep.amount) : 0,
+    person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0
   }));
   
   return (
