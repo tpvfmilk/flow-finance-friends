@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Data Consistency Issues
+- **Issue**: Sankey Chart and Category Breakdown showed different financial values due to separate mock data sources
+- **Root Cause**: `getMockSankeyData()` and category/expense mock data were using different allocation and spending amounts
+- **Solution**: 
+  - Created unified `UNIFIED_ALLOCATIONS` and `UNIFIED_EXPENSES` constants
+  - Updated all mock data functions to use consistent values
+  - Modified Sankey tooltips to use the same data source as Category Breakdown
+  - Balanced Sankey links to match total allocations from Category Breakdown
+- **Result**: All dashboard components now display consistent financial information
+- **Files Modified**: 
+  - `src/lib/mock-data.ts`
+  - `src/components/dashboard/sankey/SankeyChart.tsx`
+
 ### Enhanced
 
 #### UI/UX Improvements
@@ -28,7 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/components/layout/AppSidebar.tsx`
   - `src/components/dashboard/sankey/SankeyChart.tsx`
 
-### Fixed
+#### Data Architecture Improvements
+- **Mock Data Unification**: 
+  - Centralized all financial data in unified constants for consistency
+  - Created `UNIFIED_ALLOCATIONS` for category budget allocations
+  - Created `UNIFIED_EXPENSES` for category spending amounts
+  - Updated `getMockStats()` to calculate totals from unified data
+  - Exported unified constants for cross-component usage
+- **Sankey Data Synchronization**:
+  - Restructured Sankey nodes to use consistent allocation amounts
+  - Balanced contribution links to match total deposits
+  - Updated category-to-goal links to reflect remaining amounts after expenses
+  - Ensured Sankey tooltips display the same values as Category Breakdown
+- **Files Modified**: `src/lib/mock-data.ts`, `src/components/dashboard/sankey/SankeyChart.tsx`
 
 #### Sankey Chart Critical Error Resolution
 - **Issue**: Fixed "Cannot read properties of undefined (reading 'length')" error in SankeyChart component
@@ -52,8 +79,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive data structure validation before D3 processing
   - Fixed node map generation for proper ID-to-index mapping
 - **Files Modified**: `src/components/dashboard/sankey/sankeyUtils.ts`
-
-### Enhanced
 
 #### Error Handling and Debugging
 - **Improvement**: Added comprehensive error handling throughout the Sankey chart pipeline
@@ -143,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. ✅ Error handling and user feedback
 5. ✅ Visual hierarchy and readability improvements
 6. ✅ Sidebar spacing and typography improvements
+7. ✅ Data consistency between Sankey Chart and Category Breakdown
 
 ### Future Enhancements
 - [ ] Add animation transitions for data updates
