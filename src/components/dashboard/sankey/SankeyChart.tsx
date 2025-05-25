@@ -3,7 +3,38 @@ import * as d3 from "d3";
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
 import { processNodes, processLinks } from "./sankeyUtils";
-import { UNIFIED_ALLOCATIONS, UNIFIED_EXPENSES } from "@/lib/mock-data";
+import { 
+  UNIFIED_ALLOCATIONS, 
+  UNIFIED_EXPENSES, 
+  UNIFIED_GOAL_TARGETS, 
+  UNIFIED_GOAL_PROGRESS 
+} from "@/lib/mock-data";
+
+// Responsive configuration based on screen width
+const getResponsiveConfig = (width: number) => {
+  if (width < 640) {        // Mobile
+    return { 
+      nodeWidth: 16, 
+      nodePadding: 12, 
+      margin: { top: 15, right: 15, bottom: 15, left: 15 },
+      fontSize: { main: "13px", value: "10px" }
+    };
+  } else if (width < 1024) { // Tablet
+    return { 
+      nodeWidth: 20, 
+      nodePadding: 16, 
+      margin: { top: 18, right: 18, bottom: 18, left: 18 },
+      fontSize: { main: "14px", value: "11px" }
+    };
+  } else {                   // Desktop
+    return { 
+      nodeWidth: 24, 
+      nodePadding: 20, 
+      margin: { top: 20, right: 20, bottom: 20, left: 20 },
+      fontSize: { main: "15px", value: "12px" }
+    };
+  }
+};
 
 export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,26 +52,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     content: string;
   }>({ visible: false, x: 0, y: 0, content: "" });
 
-  // Mock goal targets and progress (in a real app, this would come from props)
-  const mockGoalTargets = {
-    "goal1": 3500, // Weekly Shop target
-    "goal2": 6000, // Special Dinners target
-    "goal3": 2000, // Car Repair target
-    "goal4": 4000, // New Laptop target
-    "goal5": 3800, // Utility Bills target
-    "goal6": 105   // Movie Night target
-  };
-
-  const mockGoalProgress = {
-    "goal1": 1200, // Weekly Shop saved so far
-    "goal2": 2400, // Special Dinners saved so far
-    "goal3": 800,  // Car Repair saved so far
-    "goal4": 1500, // New Laptop saved so far
-    "goal5": 1900, // Utility Bills saved so far
-    "goal6": 45    // Movie Night saved so far
-  };
-
-  // Function to get tooltip content based on node type
+  // Function to get tooltip content based on node type using unified data
   const getTooltipContent = (node: any) => {
     if (node.type === "category") {
       const allocated = UNIFIED_ALLOCATIONS[node.id] || 0;
@@ -73,8 +85,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         </div>
       `;
     } else if (node.type === "goal") {
-      const target = mockGoalTargets[node.id] || 0;
-      const saved = mockGoalProgress[node.id] || 0;
+      const target = UNIFIED_GOAL_TARGETS[node.id] || 0;
+      const saved = UNIFIED_GOAL_PROGRESS[node.id] || 0;
       const remaining = target - saved;
       const percentSaved = target > 0 ? ((saved / target) * 100).toFixed(1) : "0";
       
@@ -178,6 +190,34 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     }
   }, [isInitialized]);
 
+  // Enhanced resize handler with immediate re-render
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current && isInitialized) {
+        const newWidth = containerRef.current.clientWidth;
+        setDimensions(prev => {
+          // Trigger re-render if width changed significantly (>50px)
+          if (Math.abs(prev.width - newWidth) > 50) {
+            console.log(`Width changed from ${prev.width} to ${newWidth}, triggering re-render`);
+            return { width: newWidth, height: prev.height };
+          }
+          return prev;
+        });
+      }
+    };
+    
+    // Use ResizeObserver for better performance if available
+    if (containerRef.current && window.ResizeObserver) {
+      const resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(containerRef.current);
+      return () => resizeObserver.disconnect();
+    } else {
+      // Fallback to window resize listener
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [isInitialized]);
+
   // Process data and create the chart
   useEffect(() => {
     console.log("=== SankeyChart useEffect triggered ===");
@@ -189,26 +229,6 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     if (!containerRef.current || !isInitialized) {
       console.log("Waiting for container ref or initialization...");
       return;
-    }
-
-    // Add more detailed logging for data validation
-    console.log("Data type:", typeof data);
-    console.log("Data is object:", data && typeof data === 'object');
-    console.log("Data.nodes exists:", data && 'nodes' in data);
-    console.log("Data.links exists:", data && 'links' in data);
-    
-    if (data && 'nodes' in data) {
-      console.log("Data.nodes type:", typeof data.nodes);
-      console.log("Data.nodes is array:", Array.isArray(data.nodes));
-      console.log("Data.nodes length:", data.nodes?.length);
-      console.log("First few nodes:", data.nodes?.slice(0, 3));
-    }
-    
-    if (data && 'links' in data) {
-      console.log("Data.links type:", typeof data.links);
-      console.log("Data.links is array:", Array.isArray(data.links));
-      console.log("Data.links length:", data.links?.length);
-      console.log("First few links:", data.links?.slice(0, 3));
     }
 
     // Add defensive checks for data
@@ -241,14 +261,21 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       // Clear previous chart
       d3.select(containerRef.current).selectAll("*").remove();
 
-      // Set dimensions - REDUCED MARGINS: 40px → 20px for left/right
+      // Get responsive configuration based on container width
       const width = containerRef.current.clientWidth;
       const chartHeight = typeof height === "string" ? parseInt(height) : height;
-      const margin = { top: 20, right: 20, bottom: 20, left: 20 }; // UPDATED: reduced from 40px to 20px
-      const innerWidth = width - margin.left - margin.right;
-      const innerHeight = chartHeight - margin.top - margin.bottom;
+      const config = getResponsiveConfig(width);
+      
+      const innerWidth = width - config.margin.left - config.margin.right;
+      const innerHeight = chartHeight - config.margin.top - config.margin.bottom;
 
-      console.log("Chart dimensions:", { width, chartHeight, innerWidth, innerHeight });
+      console.log("Chart dimensions:", { 
+        width, 
+        chartHeight, 
+        innerWidth, 
+        innerHeight, 
+        config 
+      });
 
       if (innerWidth <= 0 || innerHeight <= 0) {
         console.warn("Invalid chart dimensions");
@@ -257,41 +284,24 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
 
       setDimensions({ width: innerWidth, height: innerHeight });
 
-      // Process nodes and links with detailed logging
+      // Process nodes and links
       console.log("=== Processing nodes and links ===");
       let processedNodes, nodeMap, depositNodes, validProcessedLinks;
       
       try {
-        console.log("Calling processNodes...");
         const nodeResult = processNodes(data);
-        console.log("processNodes result:", nodeResult);
-        
         processedNodes = nodeResult.processedNodes;
         nodeMap = nodeResult.nodeMap;
         depositNodes = nodeResult.depositNodes;
         
-        console.log("Processed nodes length:", processedNodes?.length);
-        console.log("Node map size:", nodeMap?.size);
-        console.log("Deposit nodes length:", depositNodes?.length);
-        console.log("Processed nodes sample:", processedNodes?.slice(0, 3));
-        
-        console.log("Calling processLinks...");
         validProcessedLinks = processLinks(data, nodeMap, depositNodes);
-        console.log("Valid processed links length:", validProcessedLinks?.length);
-        console.log("Valid processed links sample:", validProcessedLinks?.slice(0, 3));
         
       } catch (processError) {
         console.error("Error processing nodes and links:", processError);
-        console.error("Process error stack:", processError.stack);
         setLoadError(new Error(`Data processing error: ${processError.message}`));
         return;
       }
 
-      // Debug logging
-      console.log("=== Final processed data ===");
-      console.log("Total nodes:", processedNodes?.length || 0);
-      console.log("Valid links:", validProcessedLinks?.length || 0);
-      
       // Validate processed data
       if (!processedNodes || !Array.isArray(processedNodes) || processedNodes.length === 0) {
         console.error("No valid nodes after processing:", processedNodes);
@@ -305,54 +315,23 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         return;
       }
 
-      // Validate that all nodes have required properties
-      const invalidNodes = processedNodes.filter(node => 
-        typeof node.index !== 'number' || 
-        !node.name || 
-        typeof node.value !== 'number'
-      );
-      
-      if (invalidNodes.length > 0) {
-        console.error("Invalid nodes found:", invalidNodes);
-        setLoadError(new Error(`Found ${invalidNodes.length} invalid nodes`));
-        return;
-      }
-
-      // Validate that all links reference valid nodes
-      const maxNodeIndex = processedNodes.length - 1;
-      const invalidLinks = validProcessedLinks.filter(link => 
-        typeof link.source !== 'number' || 
-        typeof link.target !== 'number' ||
-        link.source < 0 || link.source > maxNodeIndex ||
-        link.target < 0 || link.target > maxNodeIndex ||
-        typeof link.value !== 'number' || link.value <= 0
-      );
-      
-      if (invalidLinks.length > 0) {
-        console.error("Invalid links found:", invalidLinks);
-        setLoadError(new Error(`Found ${invalidLinks.length} invalid links`));
-        return;
-      }
-      
       console.log("=== Creating Sankey generator ===");
       
-      // Create the sankey generator with correct alignment
+      // Create the sankey generator with responsive configuration
       const sankeyGenerator = sankey()
-        .nodeWidth(24)
-        .nodePadding(20)
-        .nodeAlign(sankeyLeft) // Fixed: use sankeyLeft instead of d3.sankeyJustify
+        .nodeWidth(config.nodeWidth)
+        .nodePadding(config.nodePadding)
+        .nodeAlign(sankeyLeft)
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
       // Generate the sankey layout
       const sankeyDataObj = {
-        nodes: processedNodes.map(node => ({ ...node })), // Create clean copies
-        links: validProcessedLinks.map(link => ({ ...link })) // Create clean copies
+        nodes: processedNodes.map(node => ({ ...node })),
+        links: validProcessedLinks.map(link => ({ ...link }))
       };
       
-      console.log("Sankey data object prepared:", sankeyDataObj);
       console.log("Calling sankeyGenerator...");
       
-      // Generate the layout with better error handling
       let result;
       try {
         result = sankeyGenerator(sankeyDataObj);
@@ -364,42 +343,27 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       }
       
       // Validate the result
-      if (!result) {
-        console.error("Sankey generator returned null/undefined");
+      if (!result || !result.nodes || !Array.isArray(result.nodes) || 
+          !result.links || !Array.isArray(result.links)) {
+        console.error("Sankey generator returned invalid result:", result);
         setLoadError(new Error("Sankey generator returned invalid result"));
-        return;
-      }
-      
-      if (!result.nodes || !Array.isArray(result.nodes)) {
-        console.error("Sankey result has invalid nodes:", result.nodes);
-        setLoadError(new Error("Sankey generator returned invalid nodes"));
-        return;
-      }
-      
-      if (!result.links || !Array.isArray(result.links)) {
-        console.error("Sankey result has invalid links:", result.links);
-        setLoadError(new Error("Sankey generator returned invalid links"));
         return;
       }
 
       console.log("=== Sankey generation successful ===");
-      console.log("Result nodes:", result.nodes.length);
-      console.log("Result links:", result.links.length);
-
       setSankeyData(result as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] });
 
       console.log("=== Creating SVG ===");
 
-      // Create SVG
+      // Create SVG with responsive margins
       const svg = d3.select(containerRef.current)
         .append("svg")
         .attr("width", width)
         .attr("height", chartHeight)
         .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+        .attr("transform", `translate(${config.margin.left},${config.margin.top})`);
       
-      // Create gradient definitions for beautiful link colors
-      console.log("Creating gradients...");
+      // Create gradient definitions
       createGradientDefs(svg, result.links);
       
       console.log("=== Rendering links ===");
@@ -443,10 +407,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.1))")
         .style("cursor", "pointer")
         .on("mouseover", function(event, d: any) {
-          // Enhanced visual feedback
           d3.select(this).style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.15))");
           
-          // Show tooltip
           const [mouseX, mouseY] = d3.pointer(event, containerRef.current);
           setTooltip({
             visible: true,
@@ -457,12 +419,9 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         })
         .on("mouseout", function(event, d: any) {
           d3.select(this).style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.1))");
-          
-          // Hide tooltip
           setTooltip({ visible: false, x: 0, y: 0, content: "" });
         })
         .on("mousemove", function(event, d: any) {
-          // Update tooltip position as mouse moves
           const [mouseX, mouseY] = d3.pointer(event, containerRef.current);
           setTooltip(prev => ({
             ...prev,
@@ -471,7 +430,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           }));
         });
       
-      // Enhanced text labels with better positioning and INCREASED FONT SIZES
+      // Enhanced text labels with responsive font sizes
       nodeGroup.append("text")
         .attr("x", (d: any) => {
           const nodeWidth = d.x1 - d.x0;
@@ -485,8 +444,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("dy", "0.35em")
         .attr("text-anchor", (d: any) => d.x0 < innerWidth / 2 ? "start" : "end")
         .text((d: any) => d.name)
-        .attr("font-size", "15px") // UPDATED: increased from 13px to 15px
-        .attr("font-weight", "700") // UPDATED: increased from 600 to 700
+        .attr("font-size", config.fontSize.main)
+        .attr("font-weight", "700")
         .attr("fill", "#1F2937")
         .style("pointer-events", "none");
 
@@ -509,8 +468,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           if (!d.value) return '';
           return `$${d.value.toLocaleString()}`;
         })
-        .attr("font-size", "12px") // UPDATED: increased from 11px to 12px
-        .attr("font-weight", "500") // UPDATED: increased from 400 to 500
+        .attr("font-size", config.fontSize.value)
+        .attr("font-weight", "500")
         .attr("fill", "#6B7280")
         .style("pointer-events", "none");
         
@@ -519,26 +478,9 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     } catch (error) {
       console.error('=== Error rendering D3 Sankey chart ===');
       console.error('Error:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [data, height, isInitialized]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && sankeyData && isInitialized) {
-        // Simple debounced resize handler
-        setTimeout(() => {
-          // This will trigger the main useEffect to re-render
-        }, 100);
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sankeyData, isInitialized]);
+  }, [data, height, isInitialized, dimensions.width]); // Added dimensions.width to trigger re-render
 
   if (loadError) {
     return (
