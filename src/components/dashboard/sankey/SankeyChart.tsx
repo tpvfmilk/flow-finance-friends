@@ -16,24 +16,34 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
 
   // Create linear gradient definitions for links
   const createGradientDefs = (svg: any, links: any[]) => {
+    if (!Array.isArray(links)) {
+      console.error("createGradientDefs: links is not an array:", links);
+      return;
+    }
+    
     const defs = svg.append("defs");
     
     links.forEach((link, index) => {
+      if (!link) {
+        console.warn(`Skipping null/undefined link at index ${index}`);
+        return;
+      }
+      
       const gradientId = `gradient-${index}`;
       const gradient = defs.append("linearGradient")
         .attr("id", gradientId)
         .attr("gradientUnits", "userSpaceOnUse")
-        .attr("x1", link.source.x1)
-        .attr("x2", link.target.x0);
+        .attr("x1", link.source?.x1 || 0)
+        .attr("x2", link.target?.x0 || 0);
 
       gradient.append("stop")
         .attr("offset", "0%")
-        .attr("stop-color", link.source.color || "#3B82F6")
+        .attr("stop-color", link.source?.color || "#3B82F6")
         .attr("stop-opacity", 0.8);
 
       gradient.append("stop")
         .attr("offset", "100%")
-        .attr("stop-color", link.target.color || "#10B981")
+        .attr("stop-color", link.target?.color || "#10B981")
         .attr("stop-opacity", 0.8);
 
       link.gradientId = gradientId;
@@ -42,23 +52,62 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
 
   // Process data and create the chart
   useEffect(() => {
+    console.log("=== SankeyChart useEffect triggered ===");
+    console.log("Container ref:", containerRef.current);
+    console.log("Data received:", data);
+    
     if (!containerRef.current) {
+      console.log("No container ref, returning");
       return;
     }
 
+    // Add more detailed logging for data validation
+    console.log("Data type:", typeof data);
+    console.log("Data is object:", data && typeof data === 'object');
+    console.log("Data.nodes exists:", data && 'nodes' in data);
+    console.log("Data.links exists:", data && 'links' in data);
+    
+    if (data && 'nodes' in data) {
+      console.log("Data.nodes type:", typeof data.nodes);
+      console.log("Data.nodes is array:", Array.isArray(data.nodes));
+      console.log("Data.nodes length:", data.nodes?.length);
+      console.log("Data.nodes content:", data.nodes);
+    }
+    
+    if (data && 'links' in data) {
+      console.log("Data.links type:", typeof data.links);
+      console.log("Data.links is array:", Array.isArray(data.links));
+      console.log("Data.links length:", data.links?.length);
+      console.log("Data.links content:", data.links);
+    }
+
     // Add defensive checks for data
-    if (!data || !data.nodes || !data.links || !Array.isArray(data.nodes) || !Array.isArray(data.links)) {
-      console.error("Invalid data structure:", data);
-      setLoadError(new Error("Invalid data structure: expected nodes and links arrays"));
+    if (!data || typeof data !== 'object') {
+      console.error("Invalid data: not an object:", data);
+      setLoadError(new Error("Invalid data structure: expected object with nodes and links"));
+      return;
+    }
+
+    if (!('nodes' in data) || !('links' in data)) {
+      console.error("Missing nodes or links in data:", data);
+      setLoadError(new Error("Invalid data structure: missing nodes or links properties"));
+      return;
+    }
+
+    if (!Array.isArray(data.nodes) || !Array.isArray(data.links)) {
+      console.error("Nodes or links not arrays:", { nodes: data.nodes, links: data.links });
+      setLoadError(new Error("Invalid data structure: nodes and links must be arrays"));
       return;
     }
 
     if (data.nodes.length === 0 || data.links.length === 0) {
-      console.warn("No nodes or links provided to Sankey chart");
+      console.warn("Empty nodes or links array");
       return;
     }
 
     try {
+      console.log("=== Starting chart rendering ===");
+      
       // Clear previous chart
       d3.select(containerRef.current).selectAll("*").remove();
 
@@ -69,6 +118,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       const innerWidth = width - margin.left - margin.right;
       const innerHeight = chartHeight - margin.top - margin.bottom;
 
+      console.log("Chart dimensions:", { width, chartHeight, innerWidth, innerHeight });
+
       if (innerWidth <= 0 || innerHeight <= 0) {
         console.warn("Invalid chart dimensions");
         return;
@@ -76,36 +127,53 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
 
       setDimensions({ width: innerWidth, height: innerHeight });
 
-      // Process nodes and links with error handling
+      // Process nodes and links with detailed logging
+      console.log("=== Processing nodes and links ===");
       let processedNodes, nodeMap, depositNodes, validProcessedLinks;
       
       try {
+        console.log("Calling processNodes...");
         const nodeResult = processNodes(data);
+        console.log("processNodes result:", nodeResult);
+        
         processedNodes = nodeResult.processedNodes;
         nodeMap = nodeResult.nodeMap;
         depositNodes = nodeResult.depositNodes;
         
+        console.log("Processed nodes:", processedNodes);
+        console.log("Node map:", nodeMap);
+        console.log("Deposit nodes:", depositNodes);
+        
+        console.log("Calling processLinks...");
         validProcessedLinks = processLinks(data, nodeMap, depositNodes);
+        console.log("Valid processed links:", validProcessedLinks);
+        
       } catch (processError) {
         console.error("Error processing nodes and links:", processError);
+        console.error("Process error stack:", processError.stack);
         setLoadError(new Error(`Data processing error: ${processError.message}`));
         return;
       }
 
       // Debug logging
+      console.log("=== Final processed data ===");
       console.log("Total nodes:", processedNodes?.length || 0);
       console.log("Valid links:", validProcessedLinks?.length || 0);
       
       // Validate processed data
-      if (!processedNodes || !validProcessedLinks || processedNodes.length === 0) {
+      if (!processedNodes || !Array.isArray(processedNodes) || processedNodes.length === 0) {
+        console.error("No valid nodes after processing:", processedNodes);
         setLoadError(new Error("No valid nodes found after processing"));
         return;
       }
 
-      if (validProcessedLinks.length === 0) {
+      if (!validProcessedLinks || !Array.isArray(validProcessedLinks) || validProcessedLinks.length === 0) {
+        console.error("No valid links after processing:", validProcessedLinks);
         setLoadError(new Error("No valid links found after processing"));
         return;
       }
+      
+      console.log("=== Creating Sankey generator ===");
       
       // Create the sankey generator
       const sankeyGenerator = sankey()
@@ -120,16 +188,40 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         links: validProcessedLinks
       };
       
+      console.log("Sankey data object:", sankeyDataObj);
+      console.log("Calling sankeyGenerator...");
+      
       // Generate the layout
       const result = sankeyGenerator(sankeyDataObj);
       
+      console.log("Sankey generator result:", result);
+      
       // Validate the result
-      if (!result || !result.nodes || !result.links) {
+      if (!result) {
+        console.error("Sankey generator returned null/undefined");
         setLoadError(new Error("Sankey generator returned invalid result"));
         return;
       }
+      
+      if (!result.nodes || !Array.isArray(result.nodes)) {
+        console.error("Sankey result has invalid nodes:", result.nodes);
+        setLoadError(new Error("Sankey generator returned invalid nodes"));
+        return;
+      }
+      
+      if (!result.links || !Array.isArray(result.links)) {
+        console.error("Sankey result has invalid links:", result.links);
+        setLoadError(new Error("Sankey generator returned invalid links"));
+        return;
+      }
+
+      console.log("=== Sankey generation successful ===");
+      console.log("Result nodes:", result.nodes.length);
+      console.log("Result links:", result.links.length);
 
       setSankeyData(result as { nodes: SankeyNodeExtended[], links: SankeyLinkExtended[] });
+
+      console.log("=== Creating SVG ===");
 
       // Create SVG
       const svg = d3.select(containerRef.current)
@@ -140,7 +232,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("transform", `translate(${margin.left},${margin.top})`);
       
       // Create gradient definitions for beautiful link colors
+      console.log("Creating gradients...");
       createGradientDefs(svg, result.links);
+      
+      console.log("=== Rendering links ===");
       
       // Render links with gradients
       svg.append("g")
@@ -161,6 +256,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         })
         .append("title")
         .text((d: any) => `${d.source.name} → ${d.target.name}: $${d.value.toLocaleString()}`);
+      
+      console.log("=== Rendering nodes ===");
       
       // Render nodes with enhanced styling
       const nodeGroup = svg.append("g")
@@ -229,8 +326,13 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("fill", "#6B7280")
         .style("pointer-events", "none");
         
+      console.log("=== Chart rendering complete ===");
+        
     } catch (error) {
-      console.error('Error rendering D3 Sankey chart:', error);
+      console.error('=== Error rendering D3 Sankey chart ===');
+      console.error('Error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [data, height]);
