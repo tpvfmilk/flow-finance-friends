@@ -223,20 +223,20 @@ export function Dashboard() {
         };
       }).filter(link => link.value > 0),
       // Categories to Goals (if any goals are linked to categories)
-      ...goals.map((goal, goalIndex) => {
+      ...goals.flatMap((goal, goalIndex) => {
         if (goal.category_id) {
           const catIndex = categories.findIndex(cat => cat.id === goal.category_id);
-          if (catIndex !== -1) {
-            return {
+          if (catIndex !== -1 && Number(goal.current_amount) > 0) {
+            return [{
               source: 3 + catIndex,
               target: 3 + categories.length + goalIndex,
               value: Number(goal.current_amount) || 0,
               category: goal.name
-            };
+            }];
           }
         }
-        return null;
-      }).filter(Boolean)
+        return [];
+      })
     ]
   };
 
