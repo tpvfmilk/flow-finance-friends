@@ -37,7 +37,7 @@ const Settings = () => {
     queryKey: ['partner-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('partner_settings')
+        .from('partner_settings' as any)
         .select('*')
         .single();
       
@@ -69,7 +69,7 @@ const Settings = () => {
       if (partnerSettings?.id) {
         // Update existing record
         const { data, error } = await supabase
-          .from('partner_settings')
+          .from('partner_settings' as any)
           .update(partnerData)
           .eq('id', partnerSettings.id)
           .select()
@@ -80,7 +80,7 @@ const Settings = () => {
       } else {
         // Insert new record
         const { data, error } = await supabase
-          .from('partner_settings')
+          .from('partner_settings' as any)
           .insert([partnerData])
           .select()
           .single();

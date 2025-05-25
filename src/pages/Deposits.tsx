@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +46,7 @@ const Deposits = () => {
     queryKey: ['partner-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('partner_settings')
+        .from('partner_settings' as any)
         .select('*')
         .single();
       

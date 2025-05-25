@@ -1490,6 +1490,30 @@ export type Database = {
           },
         ]
       }
+      partner_settings: {
+        Row: {
+          created_at: string
+          id: string
+          partner1_name: string
+          partner2_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner1_name?: string
+          partner2_name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner1_name?: string
+          partner2_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
