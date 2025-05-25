@@ -122,10 +122,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       // Clear previous chart
       d3.select(containerRef.current).selectAll("*").remove();
 
-      // Set dimensions
+      // Set dimensions - REDUCED MARGINS: 40px → 20px for left/right
       const width = containerRef.current.clientWidth;
       const chartHeight = typeof height === "string" ? parseInt(height) : height;
-      const margin = { top: 20, right: 40, bottom: 20, left: 40 };
+      const margin = { top: 20, right: 20, bottom: 20, left: 20 }; // UPDATED: reduced from 40px to 20px
       const innerWidth = width - margin.left - margin.right;
       const innerHeight = chartHeight - margin.top - margin.bottom;
 
@@ -331,7 +331,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .append("title")
         .text((d: any) => `${d.name}\n$${d.value?.toLocaleString() || 'N/A'}`);
       
-      // Enhanced text labels with better positioning
+      // Enhanced text labels with better positioning and INCREASED FONT SIZES
       nodeGroup.append("text")
         .attr("x", (d: any) => {
           const nodeWidth = d.x1 - d.x0;
@@ -345,8 +345,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("dy", "0.35em")
         .attr("text-anchor", (d: any) => d.x0 < innerWidth / 2 ? "start" : "end")
         .text((d: any) => d.name)
-        .attr("font-size", "13px")
-        .attr("font-weight", "600")
+        .attr("font-size", "15px") // UPDATED: increased from 13px to 15px
+        .attr("font-weight", "700") // UPDATED: increased from 600 to 700
         .attr("fill", "#1F2937")
         .style("pointer-events", "none");
 
@@ -369,8 +369,8 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           if (!d.value) return '';
           return `$${d.value.toLocaleString()}`;
         })
-        .attr("font-size", "11px")
-        .attr("font-weight", "400")
+        .attr("font-size", "12px") // UPDATED: increased from 11px to 12px
+        .attr("font-weight", "500") // UPDATED: increased from 400 to 500
         .attr("fill", "#6B7280")
         .style("pointer-events", "none");
         
