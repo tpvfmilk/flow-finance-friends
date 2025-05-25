@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Enhanced
+
+#### UI/UX Improvements
+- **Sidebar Spacing and Typography**:
+  - Increased sidebar padding from edge (added px-3 py-4 to SidebarContent and SidebarFooter)
+  - Upgraded font sizes from default to text-base (16px) for all navigation items
+  - Enhanced font weight to font-medium (500) for improved readability
+  - Added space-y-3 between menu items for better visual breathing room
+  - Improved section headers with proper typography and spacing
+  - Better visual hierarchy with consistent spacing between navigation sections
+- **Visual Enhancements**:
+  - Increased font sizes for better readability (13px → 15px for node labels, 11px → 12px for value labels)
+  - Enhanced font weights for improved visual hierarchy (600 → 700 for node labels, 400 → 500 for value labels)
+  - Reduced chart margins for better space utilization (40px → 20px left/right margins)
+  - Added enhanced hover effects with drop shadows
+  - Improved gradient link colors with better opacity management
+- **Files Modified**: 
+  - `src/components/layout/AppSidebar.tsx`
+  - `src/components/dashboard/sankey/SankeyChart.tsx`
+
 ### Fixed
 
 #### Sankey Chart Critical Error Resolution
@@ -46,15 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/components/dashboard/sankey/SankeyChart.tsx`
   - `src/components/dashboard/sankey/sankeyUtils.ts`
 
-#### UI/UX Improvements
-- **Visual Enhancements**:
-  - Increased font sizes for better readability (13px → 15px for node labels, 11px → 12px for value labels)
-  - Enhanced font weights for improved visual hierarchy (600 → 700 for node labels, 400 → 500 for value labels)
-  - Reduced chart margins for better space utilization (40px → 20px left/right margins)
-  - Added enhanced hover effects with drop shadows
-  - Improved gradient link colors with better opacity management
-- **Files Modified**: `src/components/dashboard/sankey/SankeyChart.tsx`
-
 #### Interactive Features
 - **Tooltip System**:
   - Rich HTML tooltips with detailed financial information
@@ -75,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Category-specific color mapping for consistent branding
 - **Files Modified**: `src/components/dashboard/sankey/sankeyUtils.ts`
 
-### Code Quality
+## Code Quality
 
 #### Component Architecture
 - **Refactoring**: Maintained modular component structure for better maintainability
@@ -101,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Type-safe data processing throughout the pipeline
   - Better IDE support and error catching
 
-### Technical Details
+## Technical Details
 
 #### D3 Sankey Integration
 - **Version**: Using d3-sankey v0.12.3 with d3 v7.9.0
@@ -131,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. ✅ Link validation and processing errors
 4. ✅ Error handling and user feedback
 5. ✅ Visual hierarchy and readability improvements
+6. ✅ Sidebar spacing and typography improvements
 
 ### Future Enhancements
 - [ ] Add animation transitions for data updates
@@ -144,4 +156,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - d3-sankey v0.12.3 - Sankey diagram layout algorithm
 - React 18.3.1 - Component framework
 - TypeScript - Type safety and development experience
-
