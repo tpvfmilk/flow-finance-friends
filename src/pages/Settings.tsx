@@ -37,14 +37,15 @@ const Settings = () => {
     queryKey: ['partner-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('partner_settings' as any)
+        .from('partner_settings')
         .select('*')
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.error('Error fetching partner settings:', error);
+        return null;
       }
-      return data as PartnerSettings;
+      return data;
     }
   });
 
@@ -69,7 +70,7 @@ const Settings = () => {
       if (partnerSettings?.id) {
         // Update existing record
         const { data, error } = await supabase
-          .from('partner_settings' as any)
+          .from('partner_settings')
           .update(partnerData)
           .eq('id', partnerSettings.id)
           .select()
@@ -80,7 +81,7 @@ const Settings = () => {
       } else {
         // Insert new record
         const { data, error } = await supabase
-          .from('partner_settings' as any)
+          .from('partner_settings')
           .insert([partnerData])
           .select()
           .single();
