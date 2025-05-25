@@ -67,33 +67,16 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.log("Total nodes:", processedNodes.length);
       console.log("Valid links:", validProcessedLinks.length);
       
-      // Create the sankey generator with top alignment
+      // Create the sankey generator with simplified configuration
       const sankeyGenerator = sankey()
         .nodeWidth(24) // Slightly wider nodes
         .nodePadding(20) // Tighter padding for better top alignment
         .nodeAlign(d3.sankeyJustify) // Use justify for top alignment
-        .nodeSort((a: any, b: any) => {
-          // Custom sorting for consistent top alignment
-          if (a.layer !== b.layer) {
-            return a.layer - b.layer;
-          }
-          // Sort by value within layer for better visual hierarchy
-          return b.value - a.value;
-        })
         .extent([[0, 0], [innerWidth, innerHeight]]);
 
-      // Add layer information to nodes for proper alignment
-      const layeredNodes = processedNodes.map((node, index) => ({
-        ...node,
-        originalIndex: index,
-        layer: node.type === 'deposit' ? 0 : 
-               node.type === 'joint' ? 1 : 
-               node.type === 'category' ? 2 : 3
-      }));
-
-      // Generate the sankey layout
+      // Generate the sankey layout with properly structured data
       const sankeyDataObj = {
-        nodes: layeredNodes,
+        nodes: processedNodes,
         links: validProcessedLinks
       };
       
@@ -197,11 +180,14 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         .attr("text-anchor", (d: any) => d.x0 < innerWidth / 2 ? "start" : "end")
         .text((d: any) => {
           if (!d.value) return '';
-          // Calculate percentage if this is a category node
-          const totalValue = result.nodes
-            .filter((n: any) => n.layer === d.layer)
+          // Calculate percentage for this node's layer
+          const layerValue = result.nodes
+            .filter((n: any) => {
+              // Group nodes by x position (same layer)
+              return Math.abs(n.x0 - d.x0) < 50;
+            })
             .reduce((sum: number, n: any) => sum + (n.value || 0), 0);
-          const percentage = totalValue > 0 ? ((d.value / totalValue) * 100).toFixed(1) : '0';
+          const percentage = layerValue > 0 ? ((d.value / layerValue) * 100).toFixed(1) : '0';
           return `$${d.value.toLocaleString()} (${percentage}%)`;
         })
         .attr("font-size", "11px")
@@ -219,9 +205,10 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && sankeyData) {
-        // Trigger re-render on resize
-        const resizeEvent = new Event('sankeyResize');
-        containerRef.current.dispatchEvent(resizeEvent);
+        // Trigger re-render on resize by forcing a re-render
+        // We'll just trigger the main useEffect by slightly changing the data reference
+        const event = new Event('resize');
+        window.dispatchEvent(event);
       }
     };
     
