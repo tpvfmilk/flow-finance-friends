@@ -29,8 +29,7 @@ const Categories = () => {
   const [formData, setFormData] = useState({
     name: "",
     color: "#4CAF50",
-    allocation_percentage: "",
-    budget_amount: ""
+    allocation_percentage: ""
   });
 
   const queryClient = useQueryClient();
@@ -121,8 +120,7 @@ const Categories = () => {
     setFormData({
       name: "",
       color: "#4CAF50",
-      allocation_percentage: "",
-      budget_amount: ""
+      allocation_percentage: ""
     });
   };
 
@@ -133,7 +131,7 @@ const Categories = () => {
       name: formData.name,
       color: formData.color,
       allocation_percentage: parseFloat(formData.allocation_percentage) || 0,
-      budget_amount: parseFloat(formData.budget_amount) || 0
+      budget_amount: 0 // Keep as 0 since we're not using it in the UI
     };
 
     if (editingCategory) {
@@ -148,8 +146,7 @@ const Categories = () => {
     setFormData({
       name: category.name,
       color: category.color,
-      allocation_percentage: category.allocation_percentage.toString(),
-      budget_amount: category.budget_amount.toString()
+      allocation_percentage: category.allocation_percentage.toString()
     });
     setIsDialogOpen(true);
   };
@@ -160,7 +157,6 @@ const Categories = () => {
     }
   };
 
-  const totalBudget = categories?.reduce((sum, category) => sum + category.budget_amount, 0) || 0;
   const totalAllocation = categories?.reduce((sum, category) => sum + category.allocation_percentage, 0) || 0;
 
   return (
@@ -227,17 +223,6 @@ const Categories = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, allocation_percentage: e.target.value }))}
                 />
               </div>
-              <div>
-                <Label htmlFor="budget_amount">Monthly Budget Amount</Label>
-                <Input
-                  id="budget_amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.budget_amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, budget_amount: e.target.value }))}
-                />
-              </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
                   {editingCategory ? "Update" : "Create"} Category
@@ -251,31 +236,20 @@ const Categories = () => {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Monthly Budget</CardTitle>
-            <CardDescription>Sum of all category budgets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalBudget.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Allocation</CardTitle>
-            <CardDescription>Sum of all allocation percentages</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAllocation.toFixed(1)}%</div>
-            {totalAllocation !== 100 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {totalAllocation > 100 ? "Over-allocated" : "Under-allocated"}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Total Allocation</CardTitle>
+          <CardDescription>Sum of all allocation percentages</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{totalAllocation.toFixed(1)}%</div>
+          {totalAllocation !== 100 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {totalAllocation > 100 ? "Over-allocated" : "Under-allocated"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -298,7 +272,7 @@ const Categories = () => {
                     <div>
                       <div className="font-medium">{category.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {category.allocation_percentage}% allocation • ${category.budget_amount.toFixed(2)} budget
+                        {category.allocation_percentage}% allocation
                       </div>
                     </div>
                   </div>
