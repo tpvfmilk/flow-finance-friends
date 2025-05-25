@@ -26,14 +26,14 @@ export function AppSidebar() {
   
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarContent className="flex flex-col flex-grow">
-        <SidebarMenu>
+      <SidebarContent className="flex flex-col flex-grow px-3 py-4">
+        <SidebarMenu className="space-y-3">
           <SidebarMenuButton asChild>
             <NavLink to="/" className={cn({
               'text-blue-500': pathname === "/"
             })}>
               <LayoutDashboard className="h-5 w-5" />
-              <span>Dashboard</span>
+              <span className="text-base font-medium">Dashboard</span>
             </NavLink>
           </SidebarMenuButton>
           
@@ -42,12 +42,14 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive || pathname === "/map" })
             }>
               <Map className="h-5 w-5" />
-              <span>Map View</span>
+              <span className="text-base font-medium">Map View</span>
             </NavLink>
           </SidebarMenuButton>
           
-          <SidebarMenuItem>
-            Transactions
+          <SidebarMenuItem className="py-3">
+            <div className="px-3 text-sm font-semibold text-gray-600 uppercase tracking-wider">
+              Transactions
+            </div>
           </SidebarMenuItem>
           
           <SidebarMenuButton asChild>
@@ -55,7 +57,7 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive || pathname === "/deposits" })
             }>
               <Wallet className="h-5 w-5" />
-              <span>Deposits</span>
+              <span className="text-base font-medium">Deposits</span>
             </NavLink>
           </SidebarMenuButton>
           
@@ -64,7 +66,7 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive })
             }>
               <Tags className="h-5 w-5" />
-              <span>Categories</span>
+              <span className="text-base font-medium">Categories</span>
             </NavLink>
           </SidebarMenuButton>
           
@@ -73,12 +75,14 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive || pathname.startsWith("/expenses") })
             }>
               <CreditCard className="h-5 w-5" />
-              <span>Expenses</span>
+              <span className="text-base font-medium">Expenses</span>
             </NavLink>
           </SidebarMenuButton>
           
-          <SidebarMenuItem>
-            Planning
+          <SidebarMenuItem className="py-3">
+            <div className="px-3 text-sm font-semibold text-gray-600 uppercase tracking-wider">
+              Planning
+            </div>
           </SidebarMenuItem>
           
           <SidebarMenuButton asChild>
@@ -86,7 +90,7 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive })
             }>
               <PieChart className="h-5 w-5" />
-              <span>Goals</span>
+              <span className="text-base font-medium">Goals</span>
             </NavLink>
           </SidebarMenuButton>
           
@@ -95,19 +99,19 @@ export function AppSidebar() {
               cn({ 'text-blue-500': isActive })
             }>
               <Calendar className="h-5 w-5" />
-              <span>Calendar</span>
+              <span className="text-base font-medium">Calendar</span>
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenu>
       </SidebarContent>
       
-      <SidebarFooter>
+      <SidebarFooter className="px-3 py-4">
         <SidebarMenuButton asChild>
           <NavLink to="/settings" className={({ isActive }) => 
             cn({ 'text-blue-500': isActive })
           }>
             <Settings className="h-5 w-5" />
-            <span>Settings</span>
+            <span className="text-base font-medium">Settings</span>
           </NavLink>
         </SidebarMenuButton>
       </SidebarFooter>
