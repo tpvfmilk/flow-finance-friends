@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -433,33 +434,32 @@ export function Dashboard() {
           </CardContent>
         </Card>
         
-        {/* Category Breakdown and Recent Activity */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Category Breakdown
-            </h2>
-            <CategoryBreakdown 
-              categories={sortedCategories} 
-              expenses={filteredExpenses}
-              deposits={depositsWithAllocations}
-              sortConfig={sortConfig}
-              onSort={handleSort}
-              pinnedCategoryIds={pinnedCategoryIds}
-              onTogglePin={handleTogglePin}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Recent Activity
-            </h2>
-            <RecentActivity 
-              expenses={filteredExpenses} 
-              deposits={depositsForActivity} 
-              categoryMap={categoryMap} 
-            />
-          </div>
+        {/* Category Breakdown */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Category Breakdown
+          </h2>
+          <CategoryBreakdown 
+            categories={sortedCategories} 
+            expenses={filteredExpenses}
+            deposits={depositsWithAllocations}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            pinnedCategoryIds={pinnedCategoryIds}
+            onTogglePin={handleTogglePin}
+          />
+        </div>
+        
+        {/* Recent Activity */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h2>
+          <RecentActivity 
+            expenses={filteredExpenses} 
+            deposits={depositsForActivity} 
+            categoryMap={categoryMap} 
+          />
         </div>
       </div>
     </div>
