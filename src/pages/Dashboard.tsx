@@ -30,7 +30,7 @@ export function Dashboard() {
         name: cat.name,
         percentage: Number(cat.allocation_percentage),
         color: cat.color,
-        currentBalance: Number(cat.budget_amount),
+        currentBalance: Number(cat.budget_amount), // Use the actual budget amount
         isPinned: false
       })) as Category[];
     }
@@ -143,26 +143,15 @@ export function Dashboard() {
     return acc;
   }, {} as Record<string, string>);
 
-  // Calculate allocations based on category percentages and total deposits
-  const calculateAllocations = () => {
-    const allocations: Record<string, number> = {};
-    
-    categories.forEach(category => {
-      // Calculate allocated amount based on percentage of total deposits
-      const allocatedAmount = (totalDeposits * category.percentage) / 100;
-      allocations[category.id] = allocatedAmount;
-    });
-    
-    return allocations;
-  };
+  // Use the budget amounts directly from categories as allocations
+  const allocations = categories.reduce((acc, category) => {
+    acc[category.id] = Number(category.currentBalance); // This is the budget_amount from the database
+    return acc;
+  }, {} as Record<string, number>);
 
-  const allocations = calculateAllocations();
-
-  // Update categories with calculated allocated amounts
-  const categoriesWithAllocations = categories.map(category => ({
-    ...category,
-    currentBalance: allocations[category.id] || 0
-  }));
+  console.log('=== Allocation Debug ===');
+  console.log('Categories:', categories);
+  console.log('Calculated allocations:', allocations);
 
   // Calculate individual contributor amounts
   const partner1Deposits = rawDeposits
@@ -181,7 +170,7 @@ export function Dashboard() {
       { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
-      // Category nodes - with actual allocated amounts
+      // Category nodes - with actual allocated amounts (budget amounts)
       ...categories.map(cat => ({
         name: cat.name,
         value: allocations[cat.id] || 0,
@@ -212,7 +201,7 @@ export function Dashboard() {
         value: partner2Deposits,
         category: "deposit"
       }] : []),
-      // Joint Account to Categories - fixed to use actual data structure
+      // Joint Account to Categories - use the budget amounts
       ...categories.map((cat, index) => ({
         source: 2, // Joint Account
         target: 3 + index, // Category node index (after deposits + joint)
@@ -237,19 +226,9 @@ export function Dashboard() {
     ]
   };
 
-  // Debug logging
   console.log('=== Sankey Data Debug ===');
-  console.log('Total deposits:', totalDeposits);
-  console.log('Partner 1 deposits:', partner1Deposits);
-  console.log('Partner 2 deposits:', partner2Deposits);
-  console.log('Categories:', categories.length);
-  console.log('Allocations:', allocations);
-  console.log('Sankey nodes:', sankeyData.nodes.length);
-  console.log('Sankey links:', sankeyData.links.length);
-  console.log('Links with values > 0:', sankeyData.links.filter(link => link.value > 0).length);
-  sankeyData.links.forEach((link, i) => {
-    console.log(`Link ${i}: source=${link.source}, target=${link.target}, value=${link.value}`);
-  });
+  console.log('Sankey nodes with allocations:', sankeyData.nodes);
+  console.log('Sankey links:', sankeyData.links);
 
   // Handle sorting functionality
   const handleSort = (key: string) => {
@@ -276,9 +255,10 @@ export function Dashboard() {
   // Sort and organize categories (pinned categories first, then sorted)
   const getSortedCategories = () => {
     // Create a copy with isPinned flag and allocated amounts
-    const categoriesWithPinFlag = categoriesWithAllocations.map(category => ({
+    const categoriesWithPinFlag = categories.map(category => ({
       ...category,
-      isPinned: pinnedCategoryIds.includes(category.id)
+      isPinned: pinnedCategoryIds.includes(category.id),
+      currentBalance: allocations[category.id] || 0 // Use the actual allocated amount
     }));
     
     // Split into pinned and unpinned
@@ -334,7 +314,7 @@ export function Dashboard() {
   // Get sorted categories for display
   const sortedCategories = getSortedCategories();
 
-  // Create deposits object with allocations for CategoryBreakdown - this was the issue!
+  // Create deposits object with allocations for CategoryBreakdown
   const depositsWithAllocations = {
     totalAllocated: allocations
   };
