@@ -1,3 +1,4 @@
+
 // Types for the Joint Bank Account Tracker
 
 // People
@@ -15,6 +16,17 @@ export interface Category {
   color: string;
   currentBalance: number;
   isPinned?: boolean; // Added for pinning categories
+}
+
+// Category Allocations - NEW
+export interface CategoryAllocation {
+  id: string;
+  categoryId: string;
+  depositId: string;
+  allocatedAmount: number;
+  percentageUsed: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Expenses

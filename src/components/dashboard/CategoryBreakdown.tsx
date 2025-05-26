@@ -10,10 +10,14 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Category, Expense, SortConfig } from "@/lib/types";
 import { formatCurrency, calculateRemainingBalance } from "@/lib/utils";
-import { Pin, PinOff, ArrowUp, ArrowDown } from "lucide-react";
+import { Pin, PinOff, ArrowUp, ArrowDown, Edit, Check, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCategoryPercentages } from "@/hooks/useCategoryPercentages";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CategoryBreakdownProps {
   categories: Category[];
@@ -35,9 +39,45 @@ export function CategoryBreakdown({
   onTogglePin,
 }: CategoryBreakdownProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>("");
+  const { updateCategoryPercentage, validateTotalPercentage, isUpdating } = useCategoryPercentages();
+  const queryClient = useQueryClient();
   
   const toggleCategory = (categoryId: string) => {
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+  };
+
+  const handleEditStart = (categoryId: string, currentPercentage: number) => {
+    setEditingCategory(categoryId);
+    setEditingValue(currentPercentage.toString());
+  };
+
+  const handleEditCancel = () => {
+    setEditingCategory(null);
+    setEditingValue("");
+  };
+
+  const handleEditSave = async (categoryId: string) => {
+    const newPercentage = parseFloat(editingValue);
+    
+    if (isNaN(newPercentage) || newPercentage < 0) {
+      return;
+    }
+
+    const isValid = await validateTotalPercentage(categoryId, newPercentage);
+    if (!isValid) {
+      // Could show a toast or error message here
+      return;
+    }
+
+    const success = await updateCategoryPercentage(categoryId, newPercentage);
+    if (success) {
+      setEditingCategory(null);
+      setEditingValue("");
+      // Refetch data to show updated percentages
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    }
   };
   
   // Helper to render sort indicator
@@ -96,6 +136,7 @@ export function CategoryBreakdown({
                 const spent = allocated - remaining;
                 const spentPercentage = allocated > 0 ? (spent / allocated) * 100 : 0;
                 const isPinned = pinnedCategoryIds.includes(category.id);
+                const isEditing = editingCategory === category.id;
                 
                 const categoryExpenses = expenses.filter(
                   (expense) => expense.categoryId === category.id
@@ -138,8 +179,51 @@ export function CategoryBreakdown({
                           {category.name}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell" onClick={() => toggleCategory(category.id)}>
-                        {category.percentage}%
+                      <TableCell className="hidden sm:table-cell">
+                        {isEditing ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="w-20"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                            />
+                            <span className="text-sm">%</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditSave(category.id)}
+                              disabled={isUpdating === category.id}
+                            >
+                              <Check size={14} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleEditCancel}
+                            >
+                              <X size={14} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span>{category.percentage}%</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditStart(category.id, category.percentage);
+                              }}
+                              className="p-1 h-auto"
+                            >
+                              <Edit size={12} />
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right" onClick={() => toggleCategory(category.id)}>
                         {formatCurrency(allocated)}

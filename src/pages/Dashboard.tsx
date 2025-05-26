@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +30,7 @@ export function Dashboard() {
         name: cat.name,
         percentage: Number(cat.allocation_percentage),
         color: cat.color,
-        currentBalance: 0, // Will be calculated based on allocation percentage
+        currentBalance: 0, // Will be calculated based on historical allocations
         isPinned: false
       })) as Category[];
     }
@@ -66,6 +65,19 @@ export function Dashboard() {
         .from('deposits')
         .select('*')
         .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch historical allocations - NEW
+  const { data: categoryAllocations = [] } = useQuery({
+    queryKey: ['category-allocations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('category_allocations')
+        .select('*');
       
       if (error) throw error;
       return data;
@@ -146,14 +158,16 @@ export function Dashboard() {
     return acc;
   }, {} as Record<string, string>);
 
-  // Calculate allocations based on category percentages and total deposits
+  // Calculate allocations using historical allocation data - UPDATED
   const calculateAllocations = () => {
     const allocations: Record<string, number> = {};
     
-    categories.forEach(category => {
-      // Calculate allocated amount based on percentage of total deposits
-      const allocatedAmount = (totalDeposits * category.percentage) / 100;
-      allocations[category.id] = allocatedAmount;
+    // Sum up all historical allocations for each category
+    categoryAllocations.forEach(allocation => {
+      if (!allocations[allocation.category_id]) {
+        allocations[allocation.category_id] = 0;
+      }
+      allocations[allocation.category_id] += Number(allocation.allocated_amount);
     });
     
     return allocations;
@@ -161,10 +175,10 @@ export function Dashboard() {
 
   const allocations = calculateAllocations();
 
-  console.log('=== Dashboard Allocation Debug ===');
+  console.log('=== Dashboard Historical Allocation Debug ===');
   console.log('Total deposits:', totalDeposits);
-  console.log('Categories with percentages:', categories.map(c => ({ name: c.name, percentage: c.percentage })));
-  console.log('Calculated allocations:', allocations);
+  console.log('Historical allocations:', allocations);
+  console.log('Category allocations data:', categoryAllocations);
 
   // Calculate individual contributor amounts
   const partner1Deposits = rawDeposits
@@ -175,7 +189,7 @@ export function Dashboard() {
     .filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn"))
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  // Generate Sankey data from real data with correct allocations
+  // Generate Sankey data from real data with historical allocations - UPDATED
   const sankeyData = {
     nodes: [
       // Source nodes (contributors) 
@@ -183,10 +197,10 @@ export function Dashboard() {
       { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
-      // Category nodes - with calculated allocated amounts based on percentages
+      // Category nodes - with historical allocated amounts
       ...categories.map(cat => ({
         name: cat.name,
-        value: allocations[cat.id] || 0, // Use calculated allocation
+        value: allocations[cat.id] || 0, // Use historical allocation
         type: "category" as const,
         id: cat.id,
         category: cat.name
@@ -194,7 +208,7 @@ export function Dashboard() {
       // Goal nodes - use target_amount for display value
       ...goals.map(goal => ({
         name: goal.name,
-        value: Number(goal.target_amount) || 0, // Use target_amount instead of current_amount
+        value: Number(goal.target_amount) || 0,
         type: "goal" as const,
         id: goal.id
       }))
@@ -214,23 +228,22 @@ export function Dashboard() {
         value: partner2Deposits,
         category: "deposit"
       }] : []),
-      // Joint Account to Categories - use the calculated allocations
+      // Joint Account to Categories - use the historical allocations
       ...categories.map((cat) => ({
         source: "joint", // Joint Account
         target: cat.id, // Category node
-        value: allocations[cat.id] || 0, // Use calculated allocation
+        value: allocations[cat.id] || 0, // Use historical allocation
         category: cat.name
       })).filter(link => link.value > 0),
-      // Categories to Goals - FIXED: Remove current_amount > 0 condition and use target_amount or percentage
+      // Categories to Goals
       ...goals.flatMap((goal) => {
         if (goal.category_id) {
           const category = categories.find(cat => cat.id === goal.category_id);
           if (category) {
-            // Calculate flow value: use a percentage of the category allocation or a minimum display value
             const categoryAllocation = allocations[goal.category_id] || 0;
             const flowValue = Math.max(
-              categoryAllocation * 0.1, // 10% of category allocation flows to goal
-              Number(goal.target_amount) * 0.05 // Or 5% of target amount as minimum display value
+              categoryAllocation * 0.1,
+              Number(goal.target_amount) * 0.05
             );
             
             console.log('=== Goal Link Debug ===');
@@ -252,11 +265,6 @@ export function Dashboard() {
   console.log('=== Sankey Data Debug ===');
   console.log('Sankey nodes:', sankeyData.nodes);
   console.log('Sankey links:', sankeyData.links);
-  console.log('Goal nodes count:', sankeyData.nodes.filter(n => n.type === 'goal').length);
-  console.log('Category to goal links:', sankeyData.links.filter(l => 
-    sankeyData.nodes.find(n => n.id === l.source && n.type === 'category') &&
-    sankeyData.nodes.find(n => n.id === l.target && n.type === 'goal')
-  ));
 
   // Handle sorting functionality
   const handleSort = (key: string) => {
@@ -286,7 +294,7 @@ export function Dashboard() {
     const categoriesWithPinFlag = categories.map(category => ({
       ...category,
       isPinned: pinnedCategoryIds.includes(category.id),
-      currentBalance: allocations[category.id] || 0 // Use the calculated allocated amount
+      currentBalance: allocations[category.id] || 0 // Use the historical allocated amount
     }));
     
     // Split into pinned and unpinned
@@ -299,7 +307,7 @@ export function Dashboard() {
       unpinnedCategories.sort((a, b) => {
         // Special handling for calculated values
         if (key === 'spent' || key === 'remaining' || key === 'allocated') {
-          // Calculate allocated amount based on percentages
+          // Calculate allocated amount based on historical allocations
           const allocatedA = allocations[a.id] || 0;
           const allocatedB = allocations[b.id] || 0;
           
@@ -342,7 +350,7 @@ export function Dashboard() {
   // Get sorted categories for display
   const sortedCategories = getSortedCategories();
 
-  // Create deposits object with calculated allocations for CategoryBreakdown
+  // Create deposits object with historical allocations for CategoryBreakdown
   const depositsWithAllocations = {
     totalAllocated: allocations
   };
@@ -355,7 +363,7 @@ export function Dashboard() {
     person1Amount: dep.contributor_name === (partnerSettings?.partner1_name || "Tyler") ? Number(dep.amount) : 0,
     person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0,
     description: dep.description || `${dep.type} deposit`,
-    allocations: allocations // Pass the calculated allocations here
+    allocations: allocations // Pass the historical allocations here
   }));
   
   return (

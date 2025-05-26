@@ -50,6 +50,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          percentage_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -59,6 +60,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          percentage_updated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -68,9 +70,55 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          percentage_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      category_allocations: {
+        Row: {
+          allocated_amount: number
+          category_id: string
+          created_at: string
+          deposit_id: string
+          id: string
+          percentage_used: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number
+          category_id: string
+          created_at?: string
+          deposit_id: string
+          id?: string
+          percentage_used?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          category_id?: string
+          created_at?: string
+          deposit_id?: string
+          id?: string
+          percentage_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_allocations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_allocations_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "deposits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       consultants: {
         Row: {
