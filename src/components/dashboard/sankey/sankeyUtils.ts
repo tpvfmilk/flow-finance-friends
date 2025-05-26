@@ -243,27 +243,47 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
   
   console.log("Deposit to joint links created:", depositNodes.length);
   
-  // FIX: Create links from joint account to categories using the input links data
+  // Helper function to safely get node ID from link property
+  const getNodeId = (linkProperty: number | string | any): string | null => {
+    if (typeof linkProperty === 'string') {
+      return linkProperty;
+    }
+    if (typeof linkProperty === 'number') {
+      return data.nodes[linkProperty]?.id || null;
+    }
+    if (linkProperty && typeof linkProperty === 'object' && 'id' in linkProperty) {
+      return linkProperty.id;
+    }
+    if (linkProperty != null) {
+      return String(linkProperty);
+    }
+    return null;
+  };
+  
+  // Create links from joint account to categories using the input links data
   const jointToCategoryLinks = data.links.filter(link => {
-    // Find links where source is the joint account and target is a category
-    const sourceNodeId = typeof link.source === 'string' ? link.source : 
-                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
-                        link.source?.toString();
-    const targetNodeId = typeof link.target === 'string' ? link.target : 
-                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
-                        link.target?.toString();
+    const sourceNodeId = getNodeId(link.source);
+    const targetNodeId = getNodeId(link.target);
+    
+    if (!sourceNodeId || !targetNodeId) {
+      console.warn('Invalid link source or target:', { source: link.source, target: link.target });
+      return false;
+    }
     
     const sourceNode = data.nodes.find(n => n.id === sourceNodeId);
     const targetNode = data.nodes.find(n => n.id === targetNodeId);
     
-    console.log('Checking link:', { sourceNodeId, targetNodeId, sourceNode: sourceNode?.type, targetNode: targetNode?.type });
+    console.log('Checking joint->category link:', { sourceNodeId, targetNodeId, sourceNode: sourceNode?.type, targetNode: targetNode?.type });
     
     return sourceNode && targetNode && 
            sourceNode.type === 'joint' && targetNode.type === 'category';
   }).map(link => {
-    const targetNodeId = typeof link.target === 'string' ? link.target : 
-                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
-                        link.target?.toString();
+    const targetNodeId = getNodeId(link.target);
+    
+    if (!targetNodeId) {
+      console.warn(`Invalid target for link:`, link.target);
+      return null;
+    }
     
     const target = nodeMap.get(targetNodeId);
     
@@ -290,12 +310,13 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
   
   // Keep category to goal links as they are
   const categoryToGoalLinks = data.links.filter(link => {
-    const sourceNodeId = typeof link.source === 'string' ? link.source : 
-                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
-                        link.source?.toString();
-    const targetNodeId = typeof link.target === 'string' ? link.target : 
-                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
-                        link.target?.toString();
+    const sourceNodeId = getNodeId(link.source);
+    const targetNodeId = getNodeId(link.target);
+    
+    if (!sourceNodeId || !targetNodeId) {
+      console.warn('Invalid link source or target:', { source: link.source, target: link.target });
+      return false;
+    }
     
     const sourceNode = data.nodes.find(n => n.id === sourceNodeId);
     const targetNode = data.nodes.find(n => n.id === targetNodeId);
@@ -303,12 +324,13 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
     return sourceNode && targetNode && 
            (sourceNode.type === 'category' && targetNode.type === 'goal');
   }).map(link => {
-    const sourceNodeId = typeof link.source === 'string' ? link.source : 
-                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
-                        link.source?.toString();
-    const targetNodeId = typeof link.target === 'string' ? link.target : 
-                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
-                        link.target?.toString();
+    const sourceNodeId = getNodeId(link.source);
+    const targetNodeId = getNodeId(link.target);
+    
+    if (!sourceNodeId || !targetNodeId) {
+      console.warn(`Invalid source or target for link:`, { source: link.source, target: link.target });
+      return null;
+    }
     
     const source = nodeMap.get(sourceNodeId);
     const target = nodeMap.get(targetNodeId);
