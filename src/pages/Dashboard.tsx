@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -213,20 +212,13 @@ export function Dashboard() {
         value: partner2Deposits,
         category: "deposit"
       }] : []),
-      // Joint Account to Categories - only for categories with allocations > 0
-      ...categories.map((cat, index) => {
-        const allocatedAmount = allocations[cat.id] || 0;
-        console.log(`Category ${cat.name}: allocated ${allocatedAmount}`);
-        if (allocatedAmount > 0) {
-          return {
-            source: 2, // Joint Account
-            target: 3 + index, // Category index
-            value: allocatedAmount,
-            category: cat.name
-          };
-        }
-        return null;
-      }).filter((link): link is NonNullable<typeof link> => link !== null),
+      // Joint Account to Categories - fixed to use actual data structure
+      ...categories.map((cat, index) => ({
+        source: 2, // Joint Account
+        target: 3 + index, // Category node index (after deposits + joint)
+        value: allocations[cat.id] || 0,
+        category: cat.name
+      })).filter(link => link.value > 0),
       // Categories to Goals (if any goals are linked to categories)
       ...goals.flatMap((goal, goalIndex) => {
         if (goal.category_id) {
