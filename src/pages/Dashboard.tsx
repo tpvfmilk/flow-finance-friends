@@ -80,6 +80,8 @@ export function Dashboard() {
         .order('name');
       
       if (error) throw error;
+      console.log('=== Goals Data Debug ===');
+      console.log('Raw goals data:', data);
       return data;
     }
   });
@@ -188,10 +190,10 @@ export function Dashboard() {
         id: cat.id,
         category: cat.name
       })),
-      // Goal nodes
+      // Goal nodes - use target_amount for display value
       ...goals.map(goal => ({
         name: goal.name,
-        value: Number(goal.current_amount) || 0,
+        value: Number(goal.target_amount) || 0, // Use target_amount instead of current_amount
         type: "goal" as const,
         id: goal.id
       }))
@@ -218,15 +220,25 @@ export function Dashboard() {
         value: allocations[cat.id] || 0, // Use calculated allocation
         category: cat.name
       })).filter(link => link.value > 0),
-      // Categories to Goals (if any goals are linked to categories)
+      // Categories to Goals - FIXED: Remove current_amount > 0 condition and use target_amount or percentage
       ...goals.flatMap((goal) => {
         if (goal.category_id) {
           const category = categories.find(cat => cat.id === goal.category_id);
-          if (category && Number(goal.current_amount) > 0) {
+          if (category) {
+            // Calculate flow value: use a percentage of the category allocation or a minimum display value
+            const categoryAllocation = allocations[goal.category_id] || 0;
+            const flowValue = Math.max(
+              categoryAllocation * 0.1, // 10% of category allocation flows to goal
+              Number(goal.target_amount) * 0.05 // Or 5% of target amount as minimum display value
+            );
+            
+            console.log('=== Goal Link Debug ===');
+            console.log('Goal:', goal.name, 'Category:', category.name, 'Flow Value:', flowValue);
+            
             return [{
               source: goal.category_id,
               target: goal.id,
-              value: Number(goal.current_amount) || 0,
+              value: flowValue,
               category: goal.name
             }];
           }
@@ -239,7 +251,11 @@ export function Dashboard() {
   console.log('=== Sankey Data Debug ===');
   console.log('Sankey nodes:', sankeyData.nodes);
   console.log('Sankey links:', sankeyData.links);
-  console.log('Total allocated amount:', Object.values(allocations).reduce((sum, val) => sum + val, 0));
+  console.log('Goal nodes count:', sankeyData.nodes.filter(n => n.type === 'goal').length);
+  console.log('Category to goal links:', sankeyData.links.filter(l => 
+    sankeyData.nodes.find(n => n.id === l.source && n.type === 'category') &&
+    sankeyData.nodes.find(n => n.id === l.target && n.type === 'goal')
+  ));
 
   // Handle sorting functionality
   const handleSort = (key: string) => {
