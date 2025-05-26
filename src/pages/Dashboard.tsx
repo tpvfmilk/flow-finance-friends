@@ -30,7 +30,7 @@ export function Dashboard() {
         name: cat.name,
         percentage: Number(cat.allocation_percentage),
         color: cat.color,
-        currentBalance: Number(cat.budget_amount), // Use the actual budget amount
+        currentBalance: 0, // Will be calculated based on allocation percentage
         isPinned: false
       })) as Category[];
     }
@@ -143,14 +143,24 @@ export function Dashboard() {
     return acc;
   }, {} as Record<string, string>);
 
-  // Use the budget amounts directly from categories as allocations
-  const allocations = categories.reduce((acc, category) => {
-    acc[category.id] = Number(category.currentBalance); // This is the budget_amount from the database
-    return acc;
-  }, {} as Record<string, number>);
+  // Calculate allocations based on category percentages and total deposits - THIS IS THE FIX
+  const calculateAllocations = () => {
+    const allocations: Record<string, number> = {};
+    
+    categories.forEach(category => {
+      // Calculate allocated amount based on percentage of total deposits
+      const allocatedAmount = (totalDeposits * category.percentage) / 100;
+      allocations[category.id] = allocatedAmount;
+    });
+    
+    return allocations;
+  };
+
+  const allocations = calculateAllocations();
 
   console.log('=== Allocation Debug ===');
-  console.log('Categories:', categories);
+  console.log('Total deposits:', totalDeposits);
+  console.log('Categories with percentages:', categories.map(c => ({ name: c.name, percentage: c.percentage })));
   console.log('Calculated allocations:', allocations);
 
   // Calculate individual contributor amounts
@@ -162,7 +172,7 @@ export function Dashboard() {
     .filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn"))
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  // Generate Sankey data from real data
+  // Generate Sankey data from real data with correct allocations
   const sankeyData = {
     nodes: [
       // Source nodes (contributors) 
@@ -170,7 +180,7 @@ export function Dashboard() {
       { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
-      // Category nodes - with actual allocated amounts (budget amounts)
+      // Category nodes - with calculated allocated amounts based on percentages
       ...categories.map(cat => ({
         name: cat.name,
         value: allocations[cat.id] || 0,
@@ -201,7 +211,7 @@ export function Dashboard() {
         value: partner2Deposits,
         category: "deposit"
       }] : []),
-      // Joint Account to Categories - use the budget amounts
+      // Joint Account to Categories - use the calculated allocations
       ...categories.map((cat, index) => ({
         source: 2, // Joint Account
         target: 3 + index, // Category node index (after deposits + joint)
@@ -227,8 +237,9 @@ export function Dashboard() {
   };
 
   console.log('=== Sankey Data Debug ===');
-  console.log('Sankey nodes with allocations:', sankeyData.nodes);
+  console.log('Sankey nodes with calculated allocations:', sankeyData.nodes);
   console.log('Sankey links:', sankeyData.links);
+  console.log('Total allocated amount:', Object.values(allocations).reduce((sum, val) => sum + val, 0));
 
   // Handle sorting functionality
   const handleSort = (key: string) => {
@@ -254,11 +265,11 @@ export function Dashboard() {
   
   // Sort and organize categories (pinned categories first, then sorted)
   const getSortedCategories = () => {
-    // Create a copy with isPinned flag and allocated amounts
+    // Create a copy with isPinned flag and calculated allocated amounts
     const categoriesWithPinFlag = categories.map(category => ({
       ...category,
       isPinned: pinnedCategoryIds.includes(category.id),
-      currentBalance: allocations[category.id] || 0 // Use the actual allocated amount
+      currentBalance: allocations[category.id] || 0 // Use the calculated allocated amount
     }));
     
     // Split into pinned and unpinned
@@ -271,7 +282,7 @@ export function Dashboard() {
       unpinnedCategories.sort((a, b) => {
         // Special handling for calculated values
         if (key === 'spent' || key === 'remaining' || key === 'allocated') {
-          // Calculate allocated amount based on budget_amount
+          // Calculate allocated amount based on percentages
           const allocatedA = allocations[a.id] || 0;
           const allocatedB = allocations[b.id] || 0;
           
@@ -314,7 +325,7 @@ export function Dashboard() {
   // Get sorted categories for display
   const sortedCategories = getSortedCategories();
 
-  // Create deposits object with allocations for CategoryBreakdown
+  // Create deposits object with calculated allocations for CategoryBreakdown
   const depositsWithAllocations = {
     totalAllocated: allocations
   };
@@ -327,7 +338,7 @@ export function Dashboard() {
     person1Amount: dep.contributor_name === (partnerSettings?.partner1_name || "Tyler") ? Number(dep.amount) : 0,
     person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0,
     description: dep.description || `${dep.type} deposit`,
-    allocations: allocations // Pass the actual allocations here
+    allocations: allocations // Pass the calculated allocations here
   }));
   
   return (
