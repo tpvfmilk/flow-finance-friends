@@ -1,14 +1,9 @@
+
 import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from "d3-sankey";
 import { SankeyChartProps, SankeyNodeExtended, SankeyLinkExtended } from "./sankeyTypes";
 import { processNodes, processLinks } from "./sankeyUtils";
-import { 
-  UNIFIED_ALLOCATIONS, 
-  UNIFIED_EXPENSES, 
-  UNIFIED_GOAL_TARGETS, 
-  UNIFIED_GOAL_PROGRESS 
-} from "@/lib/mock-data";
 
 // Responsive configuration based on screen width
 const getResponsiveConfig = (width: number) => {
@@ -36,7 +31,19 @@ const getResponsiveConfig = (width: number) => {
   }
 };
 
-export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
+interface SankeyChartPropsExtended extends SankeyChartProps {
+  allocations?: Record<string, number>;
+  expenses?: Array<{ id: string; amount: number; categoryId: string; }>;
+  goals?: Array<{ id: string; name: string; target_amount?: number; current_amount?: number; }>;
+}
+
+export const SankeyChart = ({ 
+  data, 
+  height = 500, 
+  allocations = {}, 
+  expenses = [], 
+  goals = [] 
+}: SankeyChartPropsExtended) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -52,11 +59,13 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
     content: string;
   }>({ visible: false, x: 0, y: 0, content: "" });
 
-  // Function to get tooltip content based on node type using unified data
+  // Function to get tooltip content based on node type using real data
   const getTooltipContent = (node: any) => {
     if (node.type === "category") {
-      const allocated = UNIFIED_ALLOCATIONS[node.id] || 0;
-      const spent = UNIFIED_EXPENSES[node.id] || 0;
+      const allocated = allocations[node.id] || 0;
+      const spent = expenses
+        .filter(exp => exp.categoryId === node.id)
+        .reduce((sum, exp) => sum + exp.amount, 0);
       const remaining = allocated - spent;
       const percentSpent = allocated > 0 ? ((spent / allocated) * 100).toFixed(1) : "0";
       
@@ -85,8 +94,9 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
         </div>
       `;
     } else if (node.type === "goal") {
-      const target = UNIFIED_GOAL_TARGETS[node.id] || 0;
-      const saved = UNIFIED_GOAL_PROGRESS[node.id] || 0;
+      const goal = goals.find(g => g.id === node.id);
+      const target = goal?.target_amount || 0;
+      const saved = goal?.current_amount || 0;
       const remaining = target - saved;
       const percentSaved = target > 0 ? ((saved / target) * 100).toFixed(1) : "0";
       
@@ -462,8 +472,9 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
           
           if (d.type === "goal") {
             // For goal nodes, show percentage and target amount in concise format
-            const currentAmount = d.value || 0;
-            const goalTarget = UNIFIED_GOAL_TARGETS[d.id] || 0;
+            const goal = goals.find(g => g.id === d.id);
+            const currentAmount = goal?.current_amount || 0;
+            const goalTarget = goal?.target_amount || 0;
             const progressPercent = goalTarget > 0 ? ((currentAmount / goalTarget) * 100).toFixed(1) : "0";
             
             // Single line showing progress percentage and goal target
@@ -501,7 +512,7 @@ export const SankeyChart = ({ data, height = 500 }: SankeyChartProps) => {
       console.error('Error:', error);
       setLoadError(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [data, height, isInitialized, dimensions.width]); // Added dimensions.width to trigger re-render
+  }, [data, height, isInitialized, dimensions.width, allocations, expenses, goals]); // Added real data dependencies
 
   if (loadError) {
     return (

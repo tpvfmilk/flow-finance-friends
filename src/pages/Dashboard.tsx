@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -200,33 +199,33 @@ export function Dashboard() {
     links: [
       // Tyler to Joint Account - only if value > 0
       ...(partner1Deposits > 0 ? [{
-        source: 0,
-        target: 2,
+        source: "tyler",
+        target: "joint",
         value: partner1Deposits,
         category: "deposit"
       }] : []),
       // Jenn to Joint Account - only if value > 0
       ...(partner2Deposits > 0 ? [{
-        source: 1,
-        target: 2,
+        source: "jenn",
+        target: "joint",
         value: partner2Deposits,
         category: "deposit"
       }] : []),
       // Joint Account to Categories - use the calculated allocations
-      ...categories.map((cat, index) => ({
-        source: 2, // Joint Account
-        target: 3 + index, // Category node index (after deposits + joint)
+      ...categories.map((cat) => ({
+        source: "joint", // Joint Account
+        target: cat.id, // Category node
         value: allocations[cat.id] || 0, // Use calculated allocation
         category: cat.name
       })).filter(link => link.value > 0),
       // Categories to Goals (if any goals are linked to categories)
-      ...goals.flatMap((goal, goalIndex) => {
+      ...goals.flatMap((goal) => {
         if (goal.category_id) {
-          const catIndex = categories.findIndex(cat => cat.id === goal.category_id);
-          if (catIndex !== -1 && Number(goal.current_amount) > 0) {
+          const category = categories.find(cat => cat.id === goal.category_id);
+          if (category && Number(goal.current_amount) > 0) {
             return [{
-              source: 3 + catIndex,
-              target: 3 + categories.length + goalIndex,
+              source: goal.category_id,
+              target: goal.id,
               value: Number(goal.current_amount) || 0,
               category: goal.name
             }];
@@ -407,7 +406,13 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="bg-gray-50 rounded-lg p-4" style={{ height: "520px" }}>
-              <SankeyChart data={sankeyData} height={500} />
+              <SankeyChart 
+                data={sankeyData} 
+                height={500} 
+                allocations={allocations}
+                expenses={filteredExpenses}
+                goals={goals}
+              />
             </div>
           </CardContent>
         </Card>

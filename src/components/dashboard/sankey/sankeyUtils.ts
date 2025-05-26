@@ -1,3 +1,4 @@
+
 import { SankeyNode, SankeyLink } from "@/lib/types";
 import * as d3 from "d3";
 
@@ -20,7 +21,12 @@ const COLOR_PALETTE = {
     "Education": "#6366F1",
     "Other": "#6B7280",
     "Dining": "#F97316",
-    "Transportation": "#8B5CF6"
+    "Transportation": "#8B5CF6",
+    "Baby Expenses": "#EC4899",
+    "Date Night": "#F59E0B",
+    "Home Expenses": "#84CC16",
+    "Savings": "#10B981",
+    "Wedding Fund": "#EC4899"
   },
   // Goals/Expenses (various colors)
   goal: {
@@ -237,17 +243,32 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
   
   console.log("Deposit to joint links created:", depositNodes.length);
   
-  // Create links from joint account to categories
+  // FIX: Create links from joint account to categories using the input links data
   const jointToCategoryLinks = data.links.filter(link => {
-    const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
-    const sourceNode = data.nodes.find(n => n.id === sourceId);
-    return sourceNode && sourceNode.type === 'deposit';
+    // Find links where source is the joint account and target is a category
+    const sourceNodeId = typeof link.source === 'string' ? link.source : 
+                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
+                        link.source?.toString();
+    const targetNodeId = typeof link.target === 'string' ? link.target : 
+                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
+                        link.target?.toString();
+    
+    const sourceNode = data.nodes.find(n => n.id === sourceNodeId);
+    const targetNode = data.nodes.find(n => n.id === targetNodeId);
+    
+    console.log('Checking link:', { sourceNodeId, targetNodeId, sourceNode: sourceNode?.type, targetNode: targetNode?.type });
+    
+    return sourceNode && targetNode && 
+           sourceNode.type === 'joint' && targetNode.type === 'category';
   }).map(link => {
-    const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
-    const target = nodeMap.get(targetId);
+    const targetNodeId = typeof link.target === 'string' ? link.target : 
+                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
+                        link.target?.toString();
+    
+    const target = nodeMap.get(targetNodeId);
     
     if (typeof target !== 'number') {
-      console.warn(`Target node not found for link: ${targetId}`);
+      console.warn(`Target node not found for link: ${targetNodeId}`);
       return null;
     }
     
@@ -269,22 +290,31 @@ export function processLinks(data: { links: SankeyLink[], nodes: SankeyNode[] },
   
   // Keep category to goal links as they are
   const categoryToGoalLinks = data.links.filter(link => {
-    const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
-    const sourceNode = data.nodes.find(n => n.id === sourceId);
-    const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
-    const targetNode = data.nodes.find(n => n.id === targetId);
+    const sourceNodeId = typeof link.source === 'string' ? link.source : 
+                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
+                        link.source?.toString();
+    const targetNodeId = typeof link.target === 'string' ? link.target : 
+                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
+                        link.target?.toString();
+    
+    const sourceNode = data.nodes.find(n => n.id === sourceNodeId);
+    const targetNode = data.nodes.find(n => n.id === targetNodeId);
     
     return sourceNode && targetNode && 
            (sourceNode.type === 'category' && targetNode.type === 'goal');
   }).map(link => {
-    const sourceId = typeof link.source === 'string' ? link.source : link.source.toString();
-    const targetId = typeof link.target === 'string' ? link.target : link.target.toString();
+    const sourceNodeId = typeof link.source === 'string' ? link.source : 
+                        typeof link.source === 'number' ? data.nodes[link.source]?.id : 
+                        link.source?.toString();
+    const targetNodeId = typeof link.target === 'string' ? link.target : 
+                        typeof link.target === 'number' ? data.nodes[link.target]?.id : 
+                        link.target?.toString();
     
-    const source = nodeMap.get(sourceId);
-    const target = nodeMap.get(targetId);
+    const source = nodeMap.get(sourceNodeId);
+    const target = nodeMap.get(targetNodeId);
     
     if (typeof source !== 'number' || typeof target !== 'number') {
-      console.warn(`Source or target node not found for link: ${sourceId} -> ${targetId}`);
+      console.warn(`Source or target node not found for link: ${sourceNodeId} -> ${targetNodeId}`);
       return null;
     }
     
