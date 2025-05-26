@@ -173,7 +173,7 @@ export function Dashboard() {
     .filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn"))
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  // Generate Sankey data from real data with debugging
+  // Generate Sankey data from real data
   const sankeyData = {
     nodes: [
       // Source nodes (contributors) 
@@ -334,7 +334,7 @@ export function Dashboard() {
   // Get sorted categories for display
   const sortedCategories = getSortedCategories();
 
-  // Create deposits object with allocations for CategoryBreakdown
+  // Create deposits object with allocations for CategoryBreakdown - this was the issue!
   const depositsWithAllocations = {
     totalAllocated: allocations
   };
@@ -347,7 +347,7 @@ export function Dashboard() {
     person1Amount: dep.contributor_name === (partnerSettings?.partner1_name || "Tyler") ? Number(dep.amount) : 0,
     person2Amount: dep.contributor_name === (partnerSettings?.partner2_name || "Jenn") ? Number(dep.amount) : 0,
     description: dep.description || `${dep.type} deposit`,
-    allocations: {} as Record<string, number>
+    allocations: allocations // Pass the actual allocations here
   }));
   
   return (
