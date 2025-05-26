@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,15 +174,15 @@ export function Dashboard() {
     .filter(d => d.contributor_name === (partnerSettings?.partner2_name || "Jenn"))
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  // Generate Sankey data from real data
+  // Generate Sankey data from real data with debugging
   const sankeyData = {
     nodes: [
-      // Source nodes (contributors) - now with proper values
+      // Source nodes (contributors) 
       { name: partnerSettings?.partner1_name || "Tyler", value: partner1Deposits, type: "deposit" as const, id: "tyler" },
       { name: partnerSettings?.partner2_name || "Jenn", value: partner2Deposits, type: "deposit" as const, id: "jenn" },
       // Joint account node
       { name: "Joint Account", value: totalDeposits, type: "joint" as const, id: "joint" },
-      // Category nodes - now with actual allocated amounts
+      // Category nodes - with actual allocated amounts
       ...categories.map(cat => ({
         name: cat.name,
         value: allocations[cat.id] || 0,
@@ -198,30 +199,34 @@ export function Dashboard() {
       }))
     ],
     links: [
-      // Tyler to Joint Account - now with proper value
-      {
+      // Tyler to Joint Account - only if value > 0
+      ...(partner1Deposits > 0 ? [{
         source: 0,
         target: 2,
         value: partner1Deposits,
         category: "deposit"
-      },
-      // Jenn to Joint Account - now with proper value
-      {
+      }] : []),
+      // Jenn to Joint Account - only if value > 0
+      ...(partner2Deposits > 0 ? [{
         source: 1,
         target: 2,
         value: partner2Deposits,
         category: "deposit"
-      },
-      // Joint Account to Categories - now with allocated amounts
+      }] : []),
+      // Joint Account to Categories - only for categories with allocations > 0
       ...categories.map((cat, index) => {
         const allocatedAmount = allocations[cat.id] || 0;
-        return {
-          source: 2,
-          target: 3 + index,
-          value: allocatedAmount,
-          category: cat.name
-        };
-      }).filter(link => link.value > 0),
+        console.log(`Category ${cat.name}: allocated ${allocatedAmount}`);
+        if (allocatedAmount > 0) {
+          return {
+            source: 2, // Joint Account
+            target: 3 + index, // Category index
+            value: allocatedAmount,
+            category: cat.name
+          };
+        }
+        return null;
+      }).filter((link): link is NonNullable<typeof link> => link !== null),
       // Categories to Goals (if any goals are linked to categories)
       ...goals.flatMap((goal, goalIndex) => {
         if (goal.category_id) {
@@ -239,6 +244,20 @@ export function Dashboard() {
       })
     ]
   };
+
+  // Debug logging
+  console.log('=== Sankey Data Debug ===');
+  console.log('Total deposits:', totalDeposits);
+  console.log('Partner 1 deposits:', partner1Deposits);
+  console.log('Partner 2 deposits:', partner2Deposits);
+  console.log('Categories:', categories.length);
+  console.log('Allocations:', allocations);
+  console.log('Sankey nodes:', sankeyData.nodes.length);
+  console.log('Sankey links:', sankeyData.links.length);
+  console.log('Links with values > 0:', sankeyData.links.filter(link => link.value > 0).length);
+  sankeyData.links.forEach((link, i) => {
+    console.log(`Link ${i}: source=${link.source}, target=${link.target}, value=${link.value}`);
+  });
 
   // Handle sorting functionality
   const handleSort = (key: string) => {
