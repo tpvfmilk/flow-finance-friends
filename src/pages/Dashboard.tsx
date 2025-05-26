@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,7 +144,7 @@ export function Dashboard() {
     return acc;
   }, {} as Record<string, string>);
 
-  // Calculate allocations based on category percentages and total deposits - THIS IS THE FIX
+  // Calculate allocations based on category percentages and total deposits
   const calculateAllocations = () => {
     const allocations: Record<string, number> = {};
     
@@ -158,7 +159,7 @@ export function Dashboard() {
 
   const allocations = calculateAllocations();
 
-  console.log('=== Allocation Debug ===');
+  console.log('=== Dashboard Allocation Debug ===');
   console.log('Total deposits:', totalDeposits);
   console.log('Categories with percentages:', categories.map(c => ({ name: c.name, percentage: c.percentage })));
   console.log('Calculated allocations:', allocations);
@@ -183,7 +184,7 @@ export function Dashboard() {
       // Category nodes - with calculated allocated amounts based on percentages
       ...categories.map(cat => ({
         name: cat.name,
-        value: allocations[cat.id] || 0,
+        value: allocations[cat.id] || 0, // Use calculated allocation
         type: "category" as const,
         id: cat.id,
         category: cat.name
@@ -215,7 +216,7 @@ export function Dashboard() {
       ...categories.map((cat, index) => ({
         source: 2, // Joint Account
         target: 3 + index, // Category node index (after deposits + joint)
-        value: allocations[cat.id] || 0,
+        value: allocations[cat.id] || 0, // Use calculated allocation
         category: cat.name
       })).filter(link => link.value > 0),
       // Categories to Goals (if any goals are linked to categories)
@@ -237,7 +238,7 @@ export function Dashboard() {
   };
 
   console.log('=== Sankey Data Debug ===');
-  console.log('Sankey nodes with calculated allocations:', sankeyData.nodes);
+  console.log('Sankey nodes:', sankeyData.nodes);
   console.log('Sankey links:', sankeyData.links);
   console.log('Total allocated amount:', Object.values(allocations).reduce((sum, val) => sum + val, 0));
 
