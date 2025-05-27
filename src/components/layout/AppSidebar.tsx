@@ -1,3 +1,4 @@
+
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -17,7 +18,6 @@ import {
   PieChart,
   Calendar,
   Settings,
-  Map,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -34,15 +34,6 @@ export function AppSidebar() {
             })}>
               <LayoutDashboard className="h-5 w-5" />
               <span className="text-base font-medium">Dashboard</span>
-            </NavLink>
-          </SidebarMenuButton>
-          
-          <SidebarMenuButton asChild>
-            <NavLink to="/map" className={({ isActive }) => 
-              cn({ 'text-blue-500': isActive || pathname === "/map" })
-            }>
-              <Map className="h-5 w-5" />
-              <span className="text-base font-medium">Map View</span>
             </NavLink>
           </SidebarMenuButton>
           

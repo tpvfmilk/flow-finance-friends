@@ -12,7 +12,6 @@ import Categories from "./pages/Categories"
 import Deposits from "./pages/Deposits"
 import Goals from "./pages/Goals"
 import Settings from "./pages/Settings"
-import MapPage from "./pages/MapPage"
 import NotFound from "./pages/NotFound"
 
 const queryClient = new QueryClient()
@@ -31,7 +30,6 @@ const App = () => (
             <Route path="deposits" element={<Deposits />} />
             <Route path="goals" element={<Goals />} />
             <Route path="settings" element={<Settings />} />
-            <Route path="map" element={<MapPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

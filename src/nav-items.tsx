@@ -1,5 +1,5 @@
 
-import { HomeIcon, BarChart3, DollarSign, Tag, PiggyBank, Target, Settings, MapPin } from "lucide-react";
+import { HomeIcon, BarChart3, DollarSign, Tag, PiggyBank, Target, Settings } from "lucide-react";
 
 export const navItems = [
   {
@@ -31,10 +31,5 @@ export const navItems = [
     title: "Settings",
     to: "/settings",
     icon: <Settings className="h-4 w-4" />,
-  },
-  {
-    title: "Map",
-    to: "/map",
-    icon: <MapPin className="h-4 w-4" />,
   },
 ];

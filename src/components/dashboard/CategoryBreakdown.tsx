@@ -100,6 +100,22 @@ export function CategoryBreakdown({
       {getSortDirectionIcon(column)}
     </div>
   );
+
+  // Calculate summary totals
+  const calculateSummaryTotals = () => {
+    const totalPercentage = categories.reduce((sum, cat) => sum + cat.percentage, 0);
+    const totalAllocated = Object.values(deposits.totalAllocated).reduce((sum, amount) => sum + amount, 0);
+    const totalSpent = categories.reduce((sum, category) => {
+      const allocated = deposits.totalAllocated[category.id] || 0;
+      const remaining = calculateRemainingBalance(allocated, expenses, category.id);
+      return sum + (allocated - remaining);
+    }, 0);
+    const totalRemaining = totalAllocated - totalSpent;
+
+    return { totalPercentage, totalAllocated, totalSpent, totalRemaining };
+  };
+
+  const summaryTotals = calculateSummaryTotals();
   
   return (
     <TooltipProvider>
@@ -274,6 +290,24 @@ export function CategoryBreakdown({
                   </>
                 );
               })}
+              
+              {/* Summary Row */}
+              <TableRow className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
+                <TableCell></TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {summaryTotals.totalPercentage.toFixed(1)}%
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(summaryTotals.totalAllocated)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(summaryTotals.totalSpent)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(summaryTotals.totalRemaining)}
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </CardContent>
