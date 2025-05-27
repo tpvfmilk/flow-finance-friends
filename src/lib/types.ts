@@ -1,3 +1,4 @@
+
 // Types for the Joint Bank Account Tracker
 
 // People
@@ -28,42 +29,43 @@ export interface CategoryAllocation {
   updatedAt: string;
 }
 
-// Expenses
+// Expenses - Updated to match database schema
 export interface Expense {
   id: string;
   amount: number;
-  categoryId: string;
+  category_id: string;
   description: string;
   date: string;
-  type: "recurring" | "one-off";
-  source?: "manual" | "receipt" | "csv";
-  receiptImage?: string;
-  csvFile?: string;
-  confidence?: number;
-  duplicateOf?: string | null;
-  verified: boolean;
+  merchant?: string;
+  receipt_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// Goals
+// Goals - Updated to match database schema
 export interface Goal {
   id: string;
   name: string;
-  targetAmount: number;
-  categoryId: string;
-  targetDate: string;
+  target_amount: number;
+  category_id: string;
+  target_date: string;
   priority: "low" | "medium" | "high";
-  currentAmount?: number;
+  current_amount?: number;
+  created_at: string;
+  updated_at: string;
 }
 
-// Deposits
+// Deposits - Updated to match database schema
 export interface Deposit {
   id: string;
   date: string;
   type: "recurring" | "one-off";
-  person1Amount: number;
-  person2Amount: number;
-  description: string;
-  allocations: Record<string, number>;
+  amount: number;
+  contributor_name: string;
+  description?: string;
+  frequency?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Sankey Data - Updated to work with recharts

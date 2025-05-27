@@ -83,13 +83,13 @@ export function depositsToCalendarEvents(deposits: Deposit[]): CalendarEvent[] {
 // Convert goals to calendar events
 export function goalsToCalendarEvents(goals: Goal[]): CalendarEvent[] {
   return goals
-    .filter(goal => goal.targetDate)
+    .filter(goal => goal.target_date)
     .map(goal => ({
       id: goal.id,
-      date: startOfDay(new Date(goal.targetDate!)),
+      date: startOfDay(new Date(goal.target_date!)),
       type: 'goal',
       title: goal.name,
-      amount: goal.targetAmount,
+      amount: goal.target_amount,
       description: `Goal deadline - ${goal.priority} priority`,
       color: goal.priority === 'high' ? '#DC2626' : goal.priority === 'medium' ? '#F59E0B' : '#6B7280',
       priority: goal.priority
