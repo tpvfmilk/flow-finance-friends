@@ -1,4 +1,3 @@
-
 // Types for the Joint Bank Account Tracker
 
 // People
@@ -103,11 +102,6 @@ export interface SortConfig {
 
 // Settings
 export interface Settings {
-  googleApiKeys?: {
-    gemini?: string;
-    documentAI?: string;
-    vision?: string;
-  };
   duplicateThreshold: number;
   autoCategorizationEnabled: boolean;
   cameraPermission: boolean;
