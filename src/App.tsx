@@ -12,6 +12,7 @@ import Categories from "./pages/Categories"
 import Deposits from "./pages/Deposits"
 import Goals from "./pages/Goals"
 import Settings from "./pages/Settings"
+import Calendar from "./pages/Calendar"
 import NotFound from "./pages/NotFound"
 
 const queryClient = new QueryClient()
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="categories" element={<Categories />} />
             <Route path="deposits" element={<Deposits />} />
             <Route path="goals" element={<Goals />} />
+            <Route path="calendar" element={<Calendar />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Route>
