@@ -45,15 +45,7 @@ export function Dashboard() {
         .order('date', { ascending: false });
       
       if (error) throw error;
-      return data.map(exp => ({
-        id: exp.id,
-        amount: Number(exp.amount),
-        categoryId: exp.category_id || '',
-        description: exp.description,
-        date: exp.date,
-        type: "one-off" as const,
-        verified: true
-      }));
+      return data;
     }
   });
 
@@ -123,7 +115,7 @@ export function Dashboard() {
     sum + Number(dep.amount), 0
   );
   
-  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
   const remainingBalance = totalDeposits - totalExpenses;
   
   // Calculate monthly stats (current month)
@@ -142,7 +134,7 @@ export function Dashboard() {
       const expDate = new Date(exp.date);
       return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
     })
-    .reduce((sum, exp) => sum + exp.amount, 0);
+    .reduce((sum, exp) => sum + Number(exp.amount), 0);
 
   const stats = {
     totalDeposits,
@@ -313,12 +305,12 @@ export function Dashboard() {
           
           // Calculate expenses for each category
           const expensesA = expenses
-            .filter(exp => exp.categoryId === a.id)
-            .reduce((sum, exp) => sum + exp.amount, 0);
+            .filter(exp => exp.category_id === a.id)
+            .reduce((sum, exp) => sum + Number(exp.amount), 0);
           
           const expensesB = expenses
-            .filter(exp => exp.categoryId === b.id)
-            .reduce((sum, exp) => sum + exp.amount, 0);
+            .filter(exp => exp.category_id === b.id)
+            .reduce((sum, exp) => sum + Number(exp.amount), 0);
           
           const remainingA = allocatedA - expensesA;
           const remainingB = allocatedB - expensesB;

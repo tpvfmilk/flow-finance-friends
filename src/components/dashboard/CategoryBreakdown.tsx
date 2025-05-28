@@ -155,7 +155,7 @@ export function CategoryBreakdown({
                 const isEditing = editingCategory === category.id;
                 
                 const categoryExpenses = expenses.filter(
-                  (expense) => expense.categoryId === category.id
+                  (expense) => expense.category_id === category.id
                 );
                 
                 return (

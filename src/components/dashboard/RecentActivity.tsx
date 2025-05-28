@@ -17,7 +17,7 @@ export function RecentActivity({ expenses, deposits, categoryMap }: RecentActivi
       type: 'expense',
       date: expense.date,
       description: expense.description,
-      category: categoryMap[expense.categoryId] || 'Unknown',
+      category: categoryMap[expense.category_id] || 'Unknown',
       amount: -expense.amount // Negative for expenses
     })),
     ...deposits.map(deposit => ({

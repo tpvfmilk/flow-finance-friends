@@ -97,7 +97,7 @@ export function calculateRemainingBalance(
   categoryId: string
 ): number {
   const categoryExpenses = expenses.filter(
-    (expense) => expense.categoryId === categoryId
+    (expense) => expense.category_id === categoryId
   );
   
   const totalSpent = categoryExpenses.reduce(
